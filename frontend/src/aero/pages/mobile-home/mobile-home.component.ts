@@ -85,7 +85,13 @@ export class MobileHomeComponent
                 "sorts": {
                     "id": false
                 },
-                "filters":{}
+                "filters":{
+                    "state": {
+                        "type": 1,
+                        "guiType": "boolean",
+                        "filter": true
+                    }
+                }
             };
 
             var url = BaseHelper.backendUrl+"public/tables/public_contents";
