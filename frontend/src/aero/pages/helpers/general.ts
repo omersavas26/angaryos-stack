@@ -257,6 +257,8 @@ export class GeneralHelper
       BaseHelper.isIos = this.platform.is("ios");
       BaseHelper.isBrowser = this.platform.is("desktop");
       
+      if(!BaseHelper.isAndroid && !BaseHelper.isIos) BaseHelper.isBrowser = true;
+      
       console.log("a: "+BaseHelper.isAndroid+", i: "+BaseHelper.isIos+", b: "+BaseHelper.isBrowser)
   }
   
