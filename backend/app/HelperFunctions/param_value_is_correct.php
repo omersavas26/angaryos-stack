@@ -6,8 +6,9 @@ if(is_string($validation))
 
 if($validation == []) return true;
 
-$params = (Array)$params;
-if(in_array('required', $validation) && !isset($params[$name])) 
+$params = (array)$params;
+$columnNames = array_keys($params);
+if(in_array('required', $validation) && !in_array($name, $columnNames)) 
     abort(helper('response_error', 'column.is.required: '.$name));
 
 if(in_array('*auto*', $validation)) 

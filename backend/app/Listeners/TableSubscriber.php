@@ -33,6 +33,11 @@ class TableSubscriber
         return $this->getDataForExport($model);
     }
     
+    public function getTableGroupByDataRequested($column, $params)
+    {
+        return $column->getGroupByData($params);
+    }
+    
     public function selectColumnDataRequested($column, $params) 
     {
         return $column->getSelectColumnData($params);

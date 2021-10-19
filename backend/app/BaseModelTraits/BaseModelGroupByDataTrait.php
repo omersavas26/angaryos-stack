@@ -6,33 +6,36 @@ use App\Libraries\ColumnClassificationLibrary;
 use App\BaseModel;
 use DB;
 
-trait BaseModelSelectColumnDataTrait 
+trait BaseModelGroupByDataTrait 
 {    
     private $deletables = ['tables', 'columns'];
     
-    public function getSelectColumnData($params)
-    {
-        $control = $this->getUpColumnControl($params);
-        if($control) return $control;
-        
-        $temp = helper('get_null_object');
-        $temp->page = $params->page;
-        $temp->search = $params->search;
-        $temp->up_column_name = @$params->upColumnName;
-        $temp->up_column_data = @$params->upColumnData;
-        $temp->request = @$params->currentFormData;
-        $temp->record = @$params->upColumnDataRecord;
-        $temp->column = $this;
-        $temp->record_per_page = isset($params->limit) ? $params->limit : 10;
-        
+    public function getGroupByData($params)
+    {           
         return ColumnClassificationLibrary::relation(  $this, 
                                                         __FUNCTION__,
                                                         $this, 
                                                         NULL, 
-                                                        $temp);
+                                                        $params);
+    }
+    
+    public function getGroupByDataForBasicColumn($params)
+    {
+        global $pipe;
+        
+        $temp = helper('get_null_object');
+        
+        $temp->records = DB::table($pipe['table'])->select($this->name)->distinct();        
+        foreach($params as $key => $val) $temp->records = $temp->records->where($key, $val);
+        $temp->records = $temp->records->get();
+        
+        $temp->source_column_name = $this->name;
+        $temp->display_column_name = $this->name;
+        
+        return $this->getGroupByDataFromRecords($temp);
     }
 
-    private function getFirstJoinTableAliasForSelectColumn($relationTable)
+    /*private function getFirstJoinTableAliasForSelectColumn($relationTable)
     {
         if(is_string($relationTable->join_table_ids))
             $joinTableIds = json_decode($relationTable->join_table_ids);
@@ -165,65 +168,37 @@ trait BaseModelSelectColumnDataTrait
         $params->relation_display_column_name = $params->relation->relation_display_column;
         
         return $this->getSelectColumnDataFromRecords($params);
-    }
+    }*/
     
-    public function getSelectColumnDataForTableIdAndColumnIds($params)
+    public function getGroupByDataForTableIdAndColumnIds($params)
     {
+        
+        dd(121, $params);
+        
         global $pipe;
         
-        $relationTable = $params->column->getRelationData('column_table_relation_id');
+        $relationTable = $this->getRelationData('column_table_relation_id');
         
         $table = $relationTable->getRelationData('relation_table_id');
         $sourceColumn = $relationTable->getRelationData('relation_source_column_id');
         $displayColumn = $relationTable->getRelationData('relation_display_column_id');
-
-        $temp = new BaseModel($table->name);
-        $model = $temp->getQuery();
         
-
-        $model->addSelect($displayColumn->name);
-        $model->addSelect($sourceColumn->name);
+        $records = DB::table($pipe['table'])->select($this->name)->distinct()->get();
+        foreach($records as $i => $rec) 
+            $records[$i]->temp_display_column = get_attr_from_cache($table->name, 
+                                                                        $sourceColumn->name, 
+                                                                        $rec->{$this->name}, 
+                                                                        $displayColumn->name);
         
-        $model->where(function ($query) use($params, $displayColumn, $sourceColumn)
-        {
-            if(strstr($params->search, 'source:'))
-            {
-                $searchStr = explode('source:', $params->search)[1];
-                $query->where($sourceColumn->name, 'ilike', '%'.$searchStr.'%');
-            }
-            else if(strstr($params->search, 'display:'))
-            {
-                $searchStr = explode('display:', $params->search)[1];
-                $query->where($displayColumn->name, 'ilike', '%'.$searchStr.'%');
-            }
-            else
-            {
-                $query->where($displayColumn->name, 'ilike', '%'.$params->search.'%')
-                    ->orWhere($sourceColumn->name, 'ilike', '%'.$params->search.'%');
-            }
-        });        
+        $temp = helper('get_null_object');
+        $temp->records = $records;
+        $temp->source_column_name = $this->name;
+        $temp->display_column_name = 'temp_display_column';
         
-        $temp->addFilters($model, $table->name, 'selectColumnData');
-        
-        $sourceSpace = $this->getSourceSpaceFromUpColumn($params);
-        if($sourceSpace != FALSE)
-            $model->whereIn($sourceColumn->name, $sourceSpace);
-        
-        if(in_array($table->name, $this->deletables) && $pipe['SHOW_DELETED_TABLES_AND_COLUMNS'] != '1')
-            $model->where($table->name.'.name', 'not like', 'deleted\_%');
-        
-        $params->count = $model->count();
-
-        $offset = ($params->page - 1) * $params->record_per_page;
-        $params->records = $model->limit($params->record_per_page)->offset($offset)->get();
-        
-        $params->relation_source_column_name = $sourceColumn->name;
-        $params->relation_display_column_name = $displayColumn->name;
-        
-        return $this->getSelectColumnDataFromRecords($params);
+        return $this->getGroupByDataFromRecords($temp);
     }
 
-    public function getSelectColumnDataForTableIdAndColumnNames($params)
+    /*public function getSelectColumnDataForTableIdAndColumnNames($params)
     {
         global $pipe;
         
@@ -304,13 +279,13 @@ trait BaseModelSelectColumnDataTrait
         $return['pagination']['more'] = $data['more'];
         
         return $return;
-    }
+    }*/
     
     
     
     /****    Up Column Functions    ****/    
     
-    private function getSourceSpaceFromUpColumn($params)
+    /*private function getSourceSpaceFromUpColumn($params)
     {
         //dd($params);
         if(strlen($params->up_column_data) == 0) return FALSE;
@@ -330,28 +305,40 @@ trait BaseModelSelectColumnDataTrait
         if($return == '***') return FALSE;
         
         return $return;
-    }
+    }*/
     
     
     
     /****    Common Functions    ****/
     
-    private function getSelectColumnDataFromRecords($params)
+    private function getGroupByDataFromRecords($params)
     {
-        $return['results'] = [];
+        global $pipe;
+        
+        $return = 
+        [
+            'status' => 'success', 
+            'code' => 200, 
+            'data' => 
+            [
+                'tableDisplayName' => get_attr_from_cache('tables', 'name', $pipe['table'], 'display_name'),
+                'columnDisplayName' => $this->display_name,
+                'columnGuiTypeName' => get_attr_from_cache('column_gui_types', 'id', $this->column_gui_type_id, 'name'),
+                'columnName' => $this->name,
+                'records' => []
+            ]
+        ];
         foreach($params->records as $rec)
         {
-            $temp['id'] = $rec->{$params->relation_source_column_name};
-            $temp['text'] = $rec->{$params->relation_display_column_name};
-            array_push($return['results'], $temp);
+            $temp['source'] = $rec->{$params->source_column_name};
+            $temp['display'] = $rec->{$params->display_column_name};
+            array_push($return['data']['records'], $temp);
         }
-        
-        $return['pagination']['more'] = $params->count > ($params->page * $params->record_per_page);
         
         return $return;
     }
     
-    private function getUpColumnControl($params)
+    /*private function getUpColumnControl($params)
     {
         if(strlen($this->up_column_id) == 0) return FALSE;
         if(strlen($params->upColumnName) == 0) return FALSE;
@@ -380,5 +367,5 @@ trait BaseModelSelectColumnDataTrait
                 'more'=> FALSE
             ]
         ];
-    }
+    }*/
 }

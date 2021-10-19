@@ -292,11 +292,24 @@ class TableController extends Controller
     
     /****    Additional Functions    ****/
     
+    public function getTableGroupByData(User $user, BaseModel $table, BaseModel $column)
+    {
+        send_log('info', 'Request Table Group By Data', $column);
+        
+        $params = $this->getValidatedParamsForTableGroupByData($column->name);
+                     
+        $data = Event::dispatch('record.getTableGroupByData.requested', [$column, $params])[0];
+        
+        send_log('info', 'Response Table Group By Data', $data);
+        
+        return response()->json($data);
+    }
+    
     public function getSelectColumnData(User $user, BaseModel $table, BaseModel $column)
     {
         send_log('info', 'Request Select Column Data', $column);
         
-        $params = $this->getValidatedParamsForSelectColumnData($table, $column);;
+        $params = $this->getValidatedParamsForSelectColumnData($table, $column);
         
         $data = Event::dispatch('record.selectColummnData.requested', [$column, $params])[0];
                 

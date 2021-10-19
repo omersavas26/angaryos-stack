@@ -82,10 +82,12 @@ Route::group(['prefix' => '{token}'], function ()
     Route::post('tables/{table_name}/{id}/getRelationTableData/{tree}', 'TableController@getRelationTableData');
     
     
-    Route::post('tables/{table_name}/getSelectColumnData/{column_name}', 'TableController@getSelectColumnData');
+    Route::any('tables/{table_name}/getSelectColumnData/{column_name}', 'TableController@getSelectColumnData');
     Route::post('tables/{table_name}/{id}/getRelationTableData/{tree}/getSelectColumnData/{column_name}', 'TableController@getSelectColumnDataInRelationTableData');
     Route::post('tables/{table_name}/{id}/archive/getSelectColumnData/{column_name}', 'TableController@getSelectColumnDataInArchive');
     Route::post('tables/{table_name}/deleted/getSelectColumnData/{column_name}', 'TableController@getSelectColumnDataInDeleted');
+    
+    Route::any('tables/{table_name}/groupBy/{column_name}', 'TableController@getTableGroupByData');
 
     
     Route::post('columnGuiTriggers/{table_name}/{column_name}/{triggerName}', 'ColumnGuiTriggerController@index');

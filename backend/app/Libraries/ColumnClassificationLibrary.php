@@ -15,7 +15,7 @@ class ColumnClassificationLibrary
         if(strlen($column->column_table_relation_id) > 0)
         {
             if($relation == NULL) $relation = self::getRelationFromColumn($column);
-            if(!isset($params->relation)) $params->relation = $relation;
+            if(!isset($params->relation)) @$params->relation = $relation;
             
             if(strlen($relation->relation_table_id) > 0)
             {

@@ -214,3 +214,15 @@ form-element
     -o-transition:background 1s;
     transition:background 1s
 }
+
+.group-by-button
+{
+    padding: 5;
+    width: 145;
+    height: 60;
+    margin: 10;
+    background-color: #0077B5;
+    white-space: nowrap;
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}

@@ -405,6 +405,24 @@ trait TableTrait
         return $return;
     }
     
+    private function getValidatedParamsForTableGroupByData($columnName)
+    {
+        $this->columnIsAuthorized($columnName, 'list');
+        
+        $params = (array)read_from_response_data('upData', TRUE);
+        if(count(array_keys($params)) == 0) return [];
+        
+        foreach($params as $columnName => $data)
+        {
+            param_value_is_correct(
+                    [$columnName => $data],
+                    $columnName,
+                    ['*auto*']);
+        }
+        
+        return $params;
+    }
+    
     
     
     /****    Data Functions    ****/    

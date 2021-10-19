@@ -52,6 +52,9 @@ export class DataTableElementComponent implements OnDestroy
     marked = [];
     
     isNative = null;
+    
+    currentGroupByColumnDataSet = null;
+    started = false;
 
     constructor(
         public route: ActivatedRoute,
@@ -109,9 +112,42 @@ export class DataTableElementComponent implements OnDestroy
     {
         this.fillDefaultVariables();
         this.fillParamsFromLocal();
+                
+        if(Object.keys(this.params["filters"]).length > 0)
+        {
+            this.started = true;
+            this.dataReload();
+        } 
+        else this.groupBySelectionNext();
         
-        this.dataReload(); 
-        this.liveDataModeOperations();         
+        this.liveDataModeOperations();
+    }
+    
+    groupByModalOptions(columnName)
+    {
+        var th = this;
+        
+        setTimeout(() =>
+        {
+            $('#groupByModeModal').on('hidden.bs.modal', function (e) 
+            {
+                th.started = true;
+                th.dataReloadInterval(300);
+            });
+            
+            BaseHelper.getScript('assets/ext_modules/select2/select2.min.js', async () => 
+            {
+                $('#groupByDataSelect'+columnName).select2()
+                .on('select2:select', (event) => 
+                {
+                    var cName = th.currentGroupByColumnDataSet['columnName'];
+                    var gName = th.currentGroupByColumnDataSet['columnGuiTypeName'];
+                
+                    var val = $('#groupByDataSelect'+cName).val();
+                    th.groupByDataSelected(cName, gName, val)
+                }); 
+            });              
+        }, 300); 
     }
     
     liveDataModeOperations()
@@ -177,7 +213,8 @@ export class DataTableElementComponent implements OnDestroy
             filters: {},
             editMode: false,
             liveDataMode: false,
-            columnNames: []
+            columnNames: [],
+            groupBy: []
         };
     }
     
@@ -225,6 +262,8 @@ export class DataTableElementComponent implements OnDestroy
             this.params.column_array_id = temp[1];
             this.params.column_array_id_query = temp[1];
         }
+        
+        if(typeof this.params["groupBy"] == "undefined") this.params["groupBy"] = [];
     }
     
     getLocalVariable(name)
@@ -249,8 +288,127 @@ export class DataTableElementComponent implements OnDestroy
                 timeout);
     }
     
-    dataReload(liveDataIntervalTrigger = false)
+    groupByDataSelected(columnName, guiType, source)
     {
+        var filter = DataHelper.changeDataForFormByGuiType(guiType, source);
+        
+        var filterType = 1;        
+        guiType = guiType.split(':')[0];
+        switch(guiType)
+        {
+            case "boolean":
+                if(filter == null || filter == "" || filter == "null")
+                {
+                    filter = null;
+                    filterType = 100;
+                }
+                else console.log(filter);
+                break;
+        }
+                
+        var key = "groupBySelection:"+this.tableName+":"+columnName;
+        BaseHelper.pipe[key] = filter;
+        
+        
+        this.params.filters[columnName] = 
+        {
+            type: filterType,
+            guiType: guiType,
+            filter: filter,
+            description: ""
+        };
+        
+        this.params.filters[columnName]['description'] = this.getFilterDescription(columnName);
+        this.params['filterColumnNames'].push(columnName);
+        
+        this.saveParamsToLocal();
+        
+        this.groupBySelectionNext();
+    }
+    
+    showGroupByModal(columnName, upData)
+    {
+        var url = this.sessionHelper.getBackendUrlWithToken();
+        if(url.length == 0) return;
+        url += this.baseUrl + "/groupBy/" + columnName+"?upData="+BaseHelper.objectToJsonStr(upData);
+        
+        this.sessionHelper.doHttpRequest("GET", url)
+        .then((data) => 
+        {
+            for(var i = 0; i < data["records"].length; i++)
+            {
+                var record = { };
+                record[columnName] = data["records"][i]["display"];
+                data["records"][i]["display"] = DataHelper.convertDataForGui(record, columnName, data["columnGuiTypeName"]);
+            }
+            
+            this.currentGroupByColumnDataSet = data;  
+            
+            var th = this;          
+            setTimeout(() => 
+            {
+                $('#groupByModeModal').modal("show");
+                th.groupByModalOptions(columnName);
+            }, 200);
+        });
+    }
+    
+    groupBySelectionNext()
+    {
+        var upData = {};
+        
+        if(typeof this.params["groupBy"] != "undefined")
+            for(var i = 0; i < this.params["groupBy"].length; i++)
+            {
+                var columnName = this.params["groupBy"][i];
+
+                var key = "groupBySelection:"+this.tableName+":"+columnName;
+                if(typeof BaseHelper.pipe[key] == "undefined")
+                {
+                    this.showGroupByModal(columnName, upData);                
+                    return;
+                }
+                else upData[columnName] = BaseHelper.pipe[key];
+                
+                console.log(upData[columnName]);
+            }
+        
+        if(($("#groupByModeModal").data('bs.modal') || {})._isShown)
+            $('#groupByModeModal').modal('hide');
+        else
+        {
+            this.started = true;
+            this.dataReload();
+        }
+    }
+    
+    pageNameClicked()
+    {
+        if(!BaseHelper['pipe']['ctrlKey'])
+        {
+            this.dataReload();
+            return;
+        }
+        
+        this.params['filters'] = {};
+        this.params['filterColumnNames'] = [];
+        
+        for(var i = 0; i < this.params["groupBy"].length; i++)
+        {
+            var columnName = this.params["groupBy"][i];
+            var key = "groupBySelection:"+this.tableName+":"+columnName;
+            delete BaseHelper.pipe[key];
+        }
+                
+        this.saveParamsToLocal();
+        
+        this.groupBySelectionNext();
+    }
+    
+    dataReload(liveDataIntervalTrigger = false)
+    {        
+        if(!this.started) return;
+        
         var url = this.sessionHelper.getBackendUrlWithToken();
         if(url.length == 0) return;
         
@@ -745,6 +903,16 @@ export class DataTableElementComponent implements OnDestroy
         this.params['columnNames'] = [];
         this.saveParamsToLocal();
     }
+    
+    groupByModeSettingModalOpen()
+    {
+        $('#groupByModeSettingModal').modal('show');
+    }
+    
+    columnVisibilityModalOpen()
+    {
+        $('#columnVisibilityModal').modal('show');
+    }
 
     toggleColumnVisibility(columnName)
     {
@@ -758,6 +926,23 @@ export class DataTableElementComponent implements OnDestroy
             for(var i = 0; i < len; i++)
                 if(columnName == this.params['columnNames'][i])
                     this.params['columnNames'].splice(i, 1);
+        }
+        
+        this.saveParamsToLocal();
+    }
+    
+    toggleColumnGroupBy(columnName)
+    {
+        if(!this.params['groupBy'].includes(columnName))
+        {
+            this.params['groupBy'].push(columnName);
+        }
+        else
+        {
+            var len = this.params['groupBy'].length;
+            for(var i = 0; i < len; i++)
+                if(columnName == this.params['groupBy'][i])
+                    this.params['groupBy'].splice(i, 1);
         }
         
         this.saveParamsToLocal();
@@ -798,14 +983,13 @@ export class DataTableElementComponent implements OnDestroy
         
         if(guiType.indexOf("select") > -1)
         {
-            this.generalHelper.navigate('dashboard');
-            //window.location.href = BaseHelper.baseUrl+"dashboard";
+            window.location.href = BaseHelper.backendBaseUrl+"#/privacy-politica";
+            //this.generalHelper.navigate('/privacy-politica');
             
-            setTimeout(() => 
-            {
-                //window.location.href = BaseHelper.baseUrl + "table/"+this.tableName+"/";
-                this.generalHelper.navigate("table/"+this.tableName+"/");
-            }, 100);
+            setTimeout(() => {
+                window.location.href = BaseHelper.baseUrl + "table/"+this.tableName+"/";
+                //this.generalHelper.navigate("table/"+this.tableName+"/");
+            }, 5);
             return;
         }
         

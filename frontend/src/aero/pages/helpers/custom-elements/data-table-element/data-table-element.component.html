@@ -4,7 +4,7 @@
             <table class="light-table">
                 <tr *ngIf="!lightTable">
                     <td>
-                        <h2 (click)="dataReload()" style="cursor: pointer" id="pageTitle">
+                        <h2 (click)="pageNameClicked()" style="cursor: pointer" id="pageTitle">
                             {{ data['table_info']['display_name'] }}
                         </h2>
                     </td>
@@ -65,6 +65,15 @@
                                 style="margin: 1 0; padding: 0 27 0 0; margin-top: -5;">                                    
                             </label>
                         </div>
+                    </td>
+                    <td>
+                        <button
+                            class="btn btn-sm float-right btn-primary btn-icon pull-right" 
+                            data-toggle2="tooltip" title="Grup Modu" 
+                            (click)="groupByModeSettingModalOpen()">
+
+                            <span class="ti ti-layers-alt"></span>
+                        </button>
                     </td>
                     <td>
                         <a *ngIf="iconVisibility['create']"
@@ -197,53 +206,14 @@
                                             role="row">
                                             
                                             <td>                                                
-                                                <div 
-                                                    class="d-inline-block" 
-                                                    ngbDropdown
-                                                    #columnVisibilityListDrop="ngbDropdown">
+                                                <button
+                                                    (click)="columnVisibilityModalOpen()"
+                                                    class="btn btn-sm float-right btn-primary btn-icon pull-right" 
+                                                    role="button" aria-haspopup="true" 
+                                                    aria-expanded="false"> 
 
-                                                    <button
-                                                        (focus)="columnVisibilityListDrop.open()"
-                                                        ngbDropdownAnchor
-                                                        id="report-button"
-                                                        class="btn btn-sm btn-primary btn-icon" 
-                                                        data-toggle="dropdown" role="button" aria-haspopup="true" 
-                                                        aria-expanded="false"> 
-
-                                                        <span data-toggle2="tooltip" title="Kolon Gizle/Aç" class="ti ti-menu-alt"></span> 
-                                                    </button>
-
-                                                    <div
-                                                        ngbDropdownMenu 
-                                                        style="max-height: 200; overflow: auto;"
-                                                        aria-labelledby="dropdownManual">
-                                                        
-                                                        <button
-                                                            (click)="showAllColumns()"
-                                                            class="dropdown-item"
-                                                            ngbDropdownItem>
-
-                                                            Tümünü Göster
-                                                        </button> 
-                                                        
-                                                        <button
-                                                            (click)="hideAllColumns()"
-                                                            class="dropdown-item"
-                                                            ngbDropdownItem>
-
-                                                            Tümünü Gizle
-                                                        </button>  
-
-                                                        <button
-                                                            *ngFor="let columnName of data['columnNames']"
-                                                            (click)="toggleColumnVisibility(columnName)"
-                                                            class="dropdown-item"
-                                                            ngbDropdownItem>
-
-                                                            {{ data['columns'][columnName]['display_name'] }}
-                                                        </button>                    
-                                                    </div>
-                                                </div>
+                                                    <span data-toggle="tooltip" title="Kolon Gizle/Aç" class="ti ti-menu-alt"></span> 
+                                                </button>
                                             </td>
                                             <td cdkDrag style="cursor: pointer;min-width: 100px !important;"
                                                 *ngFor="let columnName of params['columnNames']"
@@ -675,6 +645,123 @@
                     (click)="closeModal(inFormElementId+'inFormModal')"
                     type="button">İptal
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="columnVisibilityModal" tabindex="-1" role="dialog" aria-labelledby="columnVisibilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 5px !important;">
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                
+                <h5 style="text-align: center; padding: 10; font-size: 14;font-weight: bold;">
+                    Kolon Göster/Gizle
+                </h5>
+                <button
+                    (click)="showAllColumns()"
+                    class="dropdown-item" >
+
+                    Tümünü Göster
+                </button> 
+                
+                <button
+                    (click)="hideAllColumns()"
+                    class="dropdown-item" >
+
+                    Tümünü Gizle
+                </button>  
+
+                <button
+                    *ngFor="let columnName of data['columnNames']"
+                    (click)="toggleColumnVisibility(columnName)"
+                    class="dropdown-item"
+                    [ngStyle]="{'background-color': params['columnNames'].includes(columnName) ? '#d7fadb' : 'antiquewhite' }" >
+
+                    {{ data['columns'][columnName]['display_name'] }}
+                </button>  
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="groupByModeSettingModal" tabindex="-1" role="dialog" aria-labelledby="groupByModeSettingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 5px !important;">
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                
+                <h5 style="text-align: center; padding: 10; font-size: 12;font-weight: bold;">
+                    Kolon Grubu Ayarları
+                </h5>
+
+                <button
+                    *ngFor="let columnName of data['columnNames']"
+                    (click)="toggleColumnGroupBy(columnName)"
+                    class="dropdown-item"
+                    [ngStyle]="{'background-color': params['groupBy'].includes(columnName) ? '#d7fadb' : 'antiquewhite' }" >
+
+                    {{ data['columns'][columnName]['display_name'] }}
+                </button>  
+                
+               
+                bide ilk filtre ikincisini etkilesin
+                ctrl basılı olurken tablo adına tıklayınca pipe ve filter silinip modal açılabilir. 
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="groupByModeModal" 
+    tabindex="-1" role="dialog" 
+    aria-labelledby="groupByModeModalLabel" 
+    aria-hidden="true">
+    
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 5px !important;">
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                <div *ngIf="currentGroupByColumnDataSet">
+                    <h2 style="text-align: center;padding-top: 10;">
+                        {{ currentGroupByColumnDataSet["tableDisplayName"] }} - {{ currentGroupByColumnDataSet["columnDisplayName"] }}
+                    </h2>
+
+                    <div *ngIf="currentGroupByColumnDataSet['records'].length > 20">
+                        <select 
+                            style="width: 100%"
+                            [id]="'groupByDataSelect'+currentGroupByColumnDataSet['columnName']"  >
+                            <option> Seçiniz </option>
+                            <option 
+                                *ngFor="let record of currentGroupByColumnDataSet['records']" 
+                                [value]="record['source']">
+                                    {{ record['display'] }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div *ngIf="currentGroupByColumnDataSet['records'].length <= 20" style="text-align: center">
+                        <button 
+                            *ngFor="let record of currentGroupByColumnDataSet['records']"
+                            (click) = "groupByDataSelected(currentGroupByColumnDataSet['columnName'], currentGroupByColumnDataSet['columnGuiTypeName'], record['source'])"
+                            class = "btn btn-primary group-by-button">
+
+                            {{ record["display"] }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

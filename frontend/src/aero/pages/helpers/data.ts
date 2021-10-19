@@ -289,7 +289,7 @@ export abstract class DataHelper
         if(type == null) return;
 
         var data = record[columnName];
-        if(data == null) return "";
+        if(data == null) return "[Boş]";
         
         switch(type.split(':')[0])
         {
@@ -341,6 +341,9 @@ export abstract class DataHelper
     {
         var id = 0;
         if(record != null) id = record['id'];
+        
+        if(data == "0") data = false;
+        if(data == "1") data = true;
         
         switch(guiType)
         {
@@ -485,9 +488,14 @@ export abstract class DataHelper
         {
             case null:
             case "":
+            case "null":
                 return "";
-            case "true": return "1";
-            case "false": return "0";        
+            case "true": 
+            case true: 
+                return "1";
+            case "false": 
+            case false: 
+                return "0";        
             default:
                 alert("changeDataForFormByGuiTypeBoolean type error");
                 return data;
