@@ -56,13 +56,10 @@ export class AeroThemeHelper
 
         if($('section.content').length > 0 && (BaseHelper.isAndroid || BaseHelper.isIos))
         {
-          //var h = $('.body_scroll .card').height();
-          var h = $('.body_scroll').height() && $('.body_scroll .card').height()
+          var h = $('.body_scroll').height() || $('.body_scroll .card').height()
           if(typeof h == "undefined") h = window.innerHeight - 70;
           else h += 100;
 
-          //$('div#target-container-fluid').css('height', (h*0.85)+"px");
-          //$('section.content:eq(0)').css('height', (h*0.95)+"px");
           $('div#target-container-fluid').css('height', (h)+"px");
           $('section.content:eq(0)').css('height', (h)+"px");
           $('section.content:eq(0)').css('overflow', 'hidden');

@@ -92,6 +92,6 @@ Route::group(['prefix' => '{token}'], function ()
     
     Route::post('columnGuiTriggers/{table_name}/{column_name}/{triggerName}', 'ColumnGuiTriggerController@index');
     
-    Route::post('search/{table_name}/{words}', 'TableController@search');
+    Route::any('search/{table_name}/{words}', 'TableController@search');
 
 });

@@ -121,6 +121,10 @@ trait TableTrait
         
         $params = helper('get_null_object');
         $params->column_array_id = read_from_response_data('column_array_id');
+        $params->column_array_id_query = read_from_response_data('column_array_id_query');
+        
+        $params->sorts = [];
+        $params->filters = [];
         
         $params->page = (int)read_from_response_data('page');
         if($params->page < 1) $params->page = 1;

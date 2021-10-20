@@ -12,11 +12,14 @@ trait BaseModelGroupByDataTrait
     
     public function getGroupByData($params)
     {           
+        $temp = helper('get_null_object');
+        $temp->params = $params;
+        $temp->column = $this;
         return ColumnClassificationLibrary::relation(  $this, 
                                                         __FUNCTION__,
                                                         $this, 
                                                         NULL, 
-                                                        $params);
+                                                        $temp);
     }
     
     public function getGroupByDataForBasicColumn($params)
@@ -26,7 +29,7 @@ trait BaseModelGroupByDataTrait
         $temp = helper('get_null_object');
         
         $temp->records = DB::table($pipe['table'])->select($this->name)->distinct();        
-        foreach($params as $key => $val) $temp->records = $temp->records->where($key, $val);
+        foreach($params->params as $key => $val) $temp->records = $temp->records->where($key, $val);
         $temp->records = $temp->records->get();
         
         $temp->source_column_name = $this->name;
@@ -43,11 +46,52 @@ trait BaseModelGroupByDataTrait
             $joinTableIds = $relationTable->join_table_ids;
 
         return get_attr_from_cache('join_tables', 'id', $joinTableIds[0], 'join_table_alias');
-    }
+    }*/
     
-    public function getSelectColumnDataForJoinTableIds($params)
+    public function getGroupByDataForJoinTableIds($params)
     {
+        return ColumnClassificationLibrary::relationDbTypes(   $this, 
+                                                        __FUNCTION__, 
+                                                        $params->column, 
+                                                        NULL, 
+                                                        $params);
+    }
+
+    public function getGroupByDataForJoinTableIdsForOneToMany($params)
+    {                                                   
         global $pipe;
+        
+        $records = DB::table($pipe['table'])->select($this->name)->distinct();
+        
+        foreach($params->params as $key => $val)
+            if(is_array($val)) 
+            {
+                $where = '';
+                foreach($val as $v) $where .= $key.' = '.$v. ' or ';
+                $where = substr($where, 0, -3);
+
+                $records = $records->whereRaw($where);
+            }
+            else  dd(94569, $key, $val);
+        
+        $records = $records->get();
+
+        $ids = [];
+        foreach($records as $record)
+        {
+            $temp = [];
+            try { $temp = json_decode($record->{$this->name}); } 
+            catch (\Exception $th) 
+            {
+                \Log::alert('json.parse.error.in.getGroupByDataForJoinTableIdsForOneToMany:'.json_encode([$record, $records, $params]));
+            }
+
+            foreach($temp as $t) $ids[$t] = TRUE;
+        }
+
+        $ids = array_keys($ids);
+
+        
         
         $relationTable = $params->column->getRelationData('column_table_relation_id');
         $table = $relationTable->getRelationData('relation_table_id');
@@ -76,58 +120,25 @@ trait BaseModelGroupByDataTrait
         $model->addSelect(DB::raw($source.' as source'));        
         $model->addSelect(DB::raw($display.' as display'));
         
-        
-        $model->where(function ($query) use($source, $display, $params)
-        {
-            if(strstr($params->search, 'source:'))
-            {
-                $searchStr = explode('source:', $params->search)[1];
-                $query->whereRaw($source.'::text ilike \'%'.$searchStr.'%\'');
-            }
-            else if(strstr($params->search, 'display:'))
-            {
-                $searchStr = explode('display:', $params->search)[1];
-                $query->orWhereRaw($display.'::text ilike \'%'.$searchStr.'%\'');
-            }
-            else
-            {
-                $query->whereRaw($source.'::text ilike \'%'.$params->search.'%\'');
-                $query->orWhereRaw($display.'::text ilike \'%'.$params->search.'%\'');
-            }
-        });        
-
-        
-        if(\Request::segment(7) == 'getRelationTableData') 
-        {
-            $tree = \Request::segment(8);
-            $columnArrayId = explode(':', $tree)[1];
-            $columnArray = get_attr_from_cache('column_arrays', 'id', $columnArrayId, '*');
-            $ids = json_decode($columnArray->join_table_ids);
-            $joinTable = get_attr_from_cache('join_tables', 'id', $ids[0], '*');
-            $pipe['table'] = get_attr_from_cache('tables', 'id', $joinTable->join_table_id, 'name');//pipe filter içinde kullanılıyor
-        }
+        $model->whereIn($source, $ids);
         
         $temp->addFilters($model, $table->name, 'selectColumnData');
-        
-        $sourceSpace = $this->getSourceSpaceFromUpColumn($params);
-        if($sourceSpace != FALSE)
-            $model->whereIn($source, $sourceSpace);
-        
+                
         if(in_array($table->name, $this->deletables) && $pipe['SHOW_DELETED_TABLES_AND_COLUMNS'] != '1')
             $model->where($table->name.'.name', 'not like', 'deleted\_%');
+                
+        $params->records = $model->get();
         
-        $offset = ($params->page - 1) * $params->record_per_page;
-        $params->count = $model->count();
+
+        $temp = helper('get_null_object');
+        $temp->records = $params->records;
+        $temp->source_column_name = 'source';
+        $temp->display_column_name = 'display';
         
-        $params->records = $model->limit($params->record_per_page)->offset($offset)->get();
-        
-        $params->relation_source_column_name = 'source';
-        $params->relation_display_column_name = 'display';
-        
-        return $this->getSelectColumnDataFromRecords($params);
+        return $this->getGroupByDataFromRecords($temp);        
     }
     
-    public function getSelectColumnDataForRelationSql ($params)
+    /*public function getSelectColumnDataForRelationSql ($params)
     {
         $sql = ' from ('.$params->relation->relation_sql.') as main_table where ';
         
@@ -172,9 +183,15 @@ trait BaseModelGroupByDataTrait
     
     public function getGroupByDataForTableIdAndColumnIds($params)
     {
-        
-        dd(121, $params);
-        
+        return ColumnClassificationLibrary::relationDbTypes(   $this, 
+                                                        __FUNCTION__, 
+                                                        $params->column, 
+                                                        NULL, 
+                                                        $params);
+    }
+    
+    public function getGroupByDataForTableIdAndColumnIdsForOneToOne($params)
+    {
         global $pipe;
         
         $relationTable = $this->getRelationData('column_table_relation_id');
@@ -183,7 +200,12 @@ trait BaseModelGroupByDataTrait
         $sourceColumn = $relationTable->getRelationData('relation_source_column_id');
         $displayColumn = $relationTable->getRelationData('relation_display_column_id');
         
-        $records = DB::table($pipe['table'])->select($this->name)->distinct()->get();
+        $records = DB::table($pipe['table'])->select($this->name)->distinct();
+        
+        foreach($params->params as $key => $val) $records = $records->where($key, $val[0]);
+        
+        $records = $records->get();
+        
         foreach($records as $i => $rec) 
             $records[$i]->temp_display_column = get_attr_from_cache($table->name, 
                                                                         $sourceColumn->name, 

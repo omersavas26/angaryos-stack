@@ -23,6 +23,10 @@ export class SearchComponent
     public info = null;
     public results = {};
     public summary = {};
+    public tableList = [];
+    public filteredTableList = [];
+    public disabledTables = [];
+    public searching = false;
     
     constructor(
         public route: ActivatedRoute,
@@ -37,7 +41,7 @@ export class SearchComponent
         {
             th.words = val.words;
 
-            th.searchOnAllTables(th.words);
+            th.showTableList();
 
             this.aeroThemeHelper.addEventForFeature("standartElementEvents");
             
@@ -62,48 +66,149 @@ export class SearchComponent
         return true;
     }
 
-    async searchOnAllTables(words)
+    nullTableAuth()
     {
-        var temp = this.sessionHelper.getLoggedInUserInfo();
-        if(temp == null) return;
+        this.messageHelper.sweetAlert("Arama yapmak için bir hiç bir tablo yetkiniz yok!", "Hata", "error");
+    }
+    
+    async showTableList()
+    {
+        $('#search').click();
         
-        await temp.then(async (info) =>
+        if(this.tableList.length > 0)
         {
-            if(typeof info["auths"] == "undefined") return;
-            if(typeof info["auths"]["tables"] == "undefined") return;
-
-            this.info = info;
-
-            var tables = info["auths"]["tables"];
-            var tableNames = Object.keys(tables);
-            for(var i = 0; i < tableNames.length; i++)
+            setTimeout(() => 
             {
-                this.generalHelper.startLoading();
+                $('#tableListModal').modal("show");
+            }, 500);
+            return;
+        }
+                
+        var info = BaseHelper.loggedInUserInfo;
+        if(info == null) return this.nullTableAuth();
 
-                try 
-                {
-                    if(!this.dataControlForThisPage(tableNames[i])) 
-                    {
-                        this.generalHelper.stopLoading();
-                        continue;
-                    }
+        if(typeof info["auths"] == "undefined") return this.nullTableAuth();
+        if(typeof info["auths"]["tables"] == "undefined") return this.nullTableAuth();
 
-                    await this.searchOnTable(tableNames[i], tables[tableNames[i]]);                    
-                    this.generalHelper.stopLoading();                    
-                    await BaseHelper.sleep(1000);    
-                }
-                catch (error) 
-                {
-                    this.generalHelper.stopLoading();
-                    this.messageHelper.toastMessage("Bazı hatalar oluştu. Tüm sonuçlar görüntülenmiyor olabilir"); 
-                    console.log(error);
-                }
+        this.info = info;
+
+        var tables = info["auths"]["tables"];
+        var tableNames = Object.keys(tables);
+        
+        for(var i = 0; i < tableNames.length; i++)
+        {
+            if(!this.dataControlForThisPage(tableNames[i])) 
+            {
+                this.generalHelper.stopLoading();
+                continue;
             }
-        });
+
+            var rec = {
+                name: tableNames[i],
+                displayName: tables[tableNames[i]]["display_name"],
+                selected: true
+            };
+            
+            this.tableList.push(rec);
+        }
+
+        this.filteredTableList = BaseHelper.getCloneFromObject(this.tableList);
+        
+        setTimeout(() => 
+        {
+            $('#tableListModal').modal("show");
+        }, 500);
     } 
+    
+    toggleTableSelected(table)
+    {
+        table["selected"] = !table["selected"];
+        this.syncTableListFromFilteredTableList();
+    }
+
+    syncTableListFromFilteredTableList()
+    {
+        for(var i = 0; i < this.filteredTableList.length; i++)
+            for(var j = 0; j < this.tableList.length; j++)
+                if(this.filteredTableList[i]["name"] == this.tableList[j]["name"])
+                {
+                    this.tableList[j]["selected"] = this.filteredTableList[i]["selected"];
+                    break;
+                }
+    }    
+
+    selectAllTables()
+    {
+        for(var i = 0; i < this.filteredTableList.length; i++)
+            this.filteredTableList[i]["selected"] = true;
+        
+        
+        this.syncTableListFromFilteredTableList();
+    }
+    
+    unselectAllTables()
+    {
+        for(var i = 0; i < this.filteredTableList.length; i++)
+            this.filteredTableList[i]["selected"] = false;
+
+        this.syncTableListFromFilteredTableList();
+    }
+    
+    async searchInSelectedTables(force)
+    {
+        var info = BaseHelper.loggedInUserInfo;
+        if(info == null) return this.nullTableAuth();
+       
+        if(typeof info["auths"] == "undefined") return this.nullTableAuth();
+        if(typeof info["auths"]["tables"] == "undefined") return this.nullTableAuth();
+
+        this.info = info;
+        var tables = info["auths"]["tables"];
+        
+        this.searching = true;
+        if(force) this.disabledTables = [];
+        
+        for(var i = 0; i < this.tableList.length; i++)
+        {
+            try 
+            {
+                if(!this.tableList[i]["selected"]) continue;
+
+                var name = this.tableList[i]["name"];
+                if(this.disabledTables.includes(name)) continue;                                        
+                
+                this.generalHelper.startLoading();
+                await this.searchOnTable(name, tables[name]);                    
+                this.generalHelper.stopLoading(); 
+                
+                if(!this.searching) break;                   
+                await BaseHelper.sleep(800);   
+            }
+            catch (error) 
+            {
+                this.generalHelper.stopLoading();
+                this.messageHelper.toastMessage("Bazı hatalar oluştu. Tüm sonuçlar görüntülenmiyor olabilir"); 
+                console.log(error);
+            }
+        }
+        
+        this.searching = false;     
+    }
 
     async searchOnTable(tableName, table)
     {
+        $('#tableListModal').click();
+
+        if(typeof this.results[tableName] != "undefined") 
+            if(typeof this.results[tableName][this.page] != "undefined") 
+            {
+                setTimeout(() => 
+                {
+                    this.aeroThemeHelper.pageRutine();
+                }, 500);
+                return;
+            }
+        
         var url = this.sessionHelper.getBackendUrlWithToken();
         if(url.length == 0) return;
         
@@ -111,17 +216,39 @@ export class SearchComponent
         
         var th = this;
 
+        var listId = table['lists'][0];
+        var queryId = listId;
+        
+        try
+        {
+            queryId = table['queries'][0];
+        }
+        catch(e) {}
+        
         await this.sessionHelper.doHttpRequest("POST", url, 
         {
-            'column_array_id': table['lists'][0],
+            'column_array_id': listId,
+            'column_array_id_query': queryId,
             'page': th.page
         })
         .then((data) => 
         {
-            if(data['records'].length == 0) return;
+            if(data['records'].length == 0)
+            {
+                this.disabledTables.push(tableName);
+                return;
+            }
+
+            if(data['pages'] == this.page)
+                this.disabledTables.push(tableName);
 
             if(typeof th.results[tableName] == "undefined")  th.results[tableName] = [];
             th.results[tableName][th.page] = data;
+
+            setTimeout(() => 
+            {
+                this.aeroThemeHelper.pageRutine();
+            }, 500);
         })
     }
 
@@ -134,10 +261,21 @@ export class SearchComponent
             this.messageHelper.toastMessage("Aramak için birşeyler yazmalısınız!");
             return;
         }
-
-        this.generalHelper.navigate("search/"+words);
-        //window.location.href = BaseHelper.baseUrl+"search/"+words;
-        //window.location.reload(); 
+        
+        if(words.trim() == this.words.trim())
+        {
+            this.messageHelper.swalConfirm("Arama", "Aynı kelimeler ile tekrar arama yapmak istediğinize emin misiniz?", "info")
+            .then((r) =>
+            {
+                if(r != true) return;
+                
+                this.showTableList();
+            });            
+            return;
+        }
+        
+        this.words = words.trim();
+        this.showTableList();
     }
 
     getTableNames()
@@ -231,6 +369,23 @@ export class SearchComponent
     setPage(page)
     {
         this.page = page;
-        this.searchOnAllTables(this.words);
+        this.searchInSelectedTables(false);
+    }
+
+    tableSearch()
+    {
+        var word = $('#tableSearchInput').val();
+        if(word == null || word.length == 0) this.filteredTableList = BaseHelper.getCloneFromObject(this.tableList);
+
+        this.filteredTableList = [];
+        word = word.toLocaleLowerCase();
+        for(var j = 0; j < this.tableList.length; j++)
+        {
+            var t = this.tableList[j];
+
+            if(t["name"].toLocaleLowerCase().indexOf(word) > -1 || t["displayName"].toLocaleLowerCase().indexOf(word) > -1)
+            
+            this.filteredTableList.push(BaseHelper.getCloneFromObject(t));
+        }
     }
 }

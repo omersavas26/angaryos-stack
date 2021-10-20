@@ -162,20 +162,27 @@ export class DataTableElementComponent implements OnDestroy
         BaseHelper.liveDataModeIntervalIds.push(temp);
     }
     
+    getDefaultData()
+    {
+        var data = {};        
+        data['table_info'] = {};
+        data['table_info']['display_name'] = ""; 
+        data['table_info']['up_table'] = ""; 
+        data['allColumns'] = {};        
+        data['query_columns'] = {};        
+        data['columns'] = {};        
+        data['records'] = [];        
+        data['loaded'] = false;
+
+        return data;
+    }
+    
     fillDefaultVariables()
     {
         this.recordOperations = DataHelper.recordOperations;
         this.fullBaseUrl = this.getTablePageBaseUrl();
         
-        this.data = {};        
-        this.data['table_info'] = {};
-        this.data['table_info']['display_name'] = ""; 
-        this.data['table_info']['up_table'] = ""; 
-        this.data['allColumns'] = {};        
-        this.data['query_columns'] = {};        
-        this.data['columns'] = {};        
-        this.data['records'] = [];        
-        this.data['loaded'] = false;
+        this.data = this.getDefaultData();
         
         this.iconVisibility = {};
         this.iconVisibility['download'] = !this.lightTable && !this.archiveTable;
@@ -291,24 +298,40 @@ export class DataTableElementComponent implements OnDestroy
     groupByDataSelected(columnName, guiType, source)
     {
         var filter = DataHelper.changeDataForFormByGuiType(guiType, source);
+        if(filter.toString().substr(0, 1) == '"') filter = filter.substr(1, filter.length-2);
         
         var filterType = 1;        
+        
+        if(filter == null || filter == "" || filter == "null")
+        {
+            filter = null;
+            filterType = 100;
+        }
+
         guiType = guiType.split(':')[0];
         switch(guiType)
         {
-            case "boolean":
-                if(filter == null || filter == "" || filter == "null")
+            case "select":
+            case "multiselect":
+                var loggedInUserId = BaseHelper.loggedInUserInfo['user']['id'];
+                var key = "user:"+loggedInUserId+".tables/"+this.tableName+".data.selectQueryElementDataCache."+columnName+"."+filter;
+                
+                for(var i = 0; i < this.currentGroupByColumnDataSet["records"].length; i++)
                 {
-                    filter = null;
-                    filterType = 100;
+                    var rec = this.currentGroupByColumnDataSet["records"][i];
+                    if(rec["source"] == source)
+                    {
+                        BaseHelper.writeToLocal(key, rec["display"]);
+                        break;;
+                    }
                 }
-                else console.log(filter);
+
+                filter = [filter];
                 break;
         }
                 
         var key = "groupBySelection:"+this.tableName+":"+columnName;
         BaseHelper.pipe[key] = filter;
-        
         
         this.params.filters[columnName] = 
         {
@@ -369,8 +392,6 @@ export class DataTableElementComponent implements OnDestroy
                     return;
                 }
                 else upData[columnName] = BaseHelper.pipe[key];
-                
-                console.log(upData[columnName]);
             }
         
         if(($("#groupByModeModal").data('bs.modal') || {})._isShown)
@@ -400,6 +421,8 @@ export class DataTableElementComponent implements OnDestroy
             delete BaseHelper.pipe[key];
         }
                 
+        this.data = this.getDefaultData();
+        
         this.saveParamsToLocal();
         
         this.groupBySelectionNext();
@@ -989,7 +1012,7 @@ export class DataTableElementComponent implements OnDestroy
             setTimeout(() => {
                 window.location.href = BaseHelper.baseUrl + "table/"+this.tableName+"/";
                 //this.generalHelper.navigate("table/"+this.tableName+"/");
-            }, 5);
+            }, 50);
             return;
         }
         
@@ -1706,7 +1729,7 @@ export class DataTableElementComponent implements OnDestroy
 
         setTimeout(() => 
         {
-            $('.filter-cell multi-select-element').parent().parent().css('padding', '5 0 0 5');
+            $('.filter-cell multi-select-element').parent().parent().css('padding', '5 0 0 5');   
         }, 500);
         
         this.nativeOperations();

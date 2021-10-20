@@ -18,7 +18,8 @@ for($j = 0; $j < strlen($params); $j++)
     if(!isset($arr[$i])) $arr[$i] = '';
 
     if($control > 0) 
-        $s = str_replace (['.', ','], ['---', '___'], $s);
+        $s = str_replace (['.', ','], ['|---|', '|___|'], $s);
+
     $arr[$i] .= $s;
 }
 

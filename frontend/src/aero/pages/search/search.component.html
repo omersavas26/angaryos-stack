@@ -3,7 +3,7 @@
         <div class="block-header">
             <div class="row">
                 <div class="col-lg-7 col-md-6 col-sm-12">
-                    <h2>Arama Sonuçları</h2>
+                    <h2>Arama Sonuçları <i *ngIf="searching" class="zmdi zmdi-settings zmdi-hc-spin"></i></h2>
                 </div>
                 <div class="col-lg-5 col-md-6 col-sm-12">                
                     <button class="btn btn-primary btn-sm btn-icon float-right right_icon_toggle_btn" type="button"><i class="zmdi zmdi-arrow-right"></i></button>
@@ -16,7 +16,7 @@
                     <div class="card">
                         <div class="body">
                             <div class="input-group">
-                                <div class="input-group-prepend">
+                                <div class="input-group-prepend" (click)="search()" style="cursor: pointer">
                                     <span class="input-group-text"><i class="zmdi zmdi-search"></i></span>
                                 </div>
                                 
@@ -38,7 +38,7 @@
                                     <td style="cursor: pointer;" class="max_ellipsis">
                                         <h5 class="title">
                                             <a (click)="showInfoPage(tableName, record)">
-                                                Tablo: {{ getTableDisplayName(tableName) }}, ID: {{ record.id }}
+                                                {{ getTableDisplayName(tableName) }} tablosunda {{ record.id }} numaralı kayıt
                                             </a>
                                         </h5>
                                         <a class="link" (click)="showInfoPage(tableName, record)">
@@ -52,7 +52,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-12" *ngIf="getMaxPage() > 1">
+                <div class="col-md-12" *ngIf="getMaxPage() > 1 && !searching">
                     <ul class="pagination pagination-primary m-t-20">
                         <li [class]="'page-item ' + (page == pageNum ? 'active' : '' )" *ngFor="let pageNum of getPageRange()">
                             <a class="page-link" (click)="setPage(pageNum)">
@@ -65,3 +65,76 @@
         </div>
     </div>
 </section>
+
+<div class="modal fade" id="tableListModal" 
+    role="dialog" 
+    aria-labelledby="tableListModalLabel" 
+    aria-hidden="true">
+    
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-body" style="padding: 5px !important;">
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                
+                    <h2 style="text-align: center;padding-top: 10;">
+                        Arama yapılacak tabloları seçiniz
+                    </h2>
+
+                    <div style="text-align: center">
+                        
+                        <button 
+                            (click) = "searchInSelectedTables(true)"
+                            class = "btn btn-success"
+                            style="padding: 20; width: 200px; margin-bottom: 25;">
+
+                            Arama Yap
+                        </button>
+                        
+                        <br>
+                        
+                        <button 
+                            (click) = "selectAllTables()"
+                            class = "btn btn-warning"
+                            style="margin-bottom: 20;">
+
+                            Tümünü Seç
+                        </button>
+                        
+                        <button 
+                            (click) = "unselectAllTables()"
+                            class = "btn btn-warning"
+                            style="margin-bottom: 20;">
+
+                            Hiçbirini Seçme
+                        </button>
+                        
+                        <br>
+
+                        <input 
+                            (input)="tableSearch()" 
+                            name="tableSearchInput" 
+                            id="tableSearchInput" 
+                            type="text" 
+                            value=""
+                            class="form-control" 
+                            placeholder="Filtrele">
+
+                        <br>
+                        
+                        <button 
+                            *ngFor="let table of filteredTableList"
+                            (click) = "toggleTableSelected(table)"
+                            [class] = "'btn btn-' + (table['selected'] ? 'primary' : 'secondary') ">
+
+                            {{ table["displayName"] }}
+                        </button>
+                    </div>
+                
+            </div>
+        </div>
+    </div>
+</div>

@@ -433,7 +433,12 @@ class User extends Authenticatable
             $this->authTree = Cache::rememberForever($cacheName, function() use($auths)
             {      
                 $auths = json_decode($auths);
-                return $this->getAuthTree($auths);
+                $tree = $this->getAuthTree($auths);
+                
+                foreach($tree['tables'] as $name => $data)
+                    $tree['tables'][$name]['display_name'] = get_attr_from_cache('tables', 'name', $name, 'display_name');
+                
+                return $tree;
             });
         }
         

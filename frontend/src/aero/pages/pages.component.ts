@@ -597,6 +597,10 @@ export class PagesComponent
   ngAfterViewInit() 
   {    
     this.aeroThemeHelper.loadPageScripts(); 
+    setTimeout(() =>
+    {
+        if(!BaseHelper.isBrowser) $('#searchWords').css('font-size', '18px');
+    }, 1000);
   }
 
   search()
@@ -604,14 +608,11 @@ export class PagesComponent
     var words = $('#searchWords').val();
     if(words == null || words.length == 0)
     {
-      this.messageHelper.toastMessage("Aramak için birşeyler yazmalısınız!");
+      this.messageHelper.sweetAlert("Aramak için birşeyler yazmalısınız!", "Arama", "warning");
       return;
     }
     
     this.generalHelper.navigate("search/"+words);
-
-    //window.location.href = BaseHelper.baseUrl+"search/"+words;
-    //window.location.reload();
   }
 
   changeTheme(name)
