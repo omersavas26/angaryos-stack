@@ -8,10 +8,6 @@
     <span style="font-size: 12px;" class="ti ti-minus" ></span>
 </button>
 
-<div id="loading" *ngIf="loading">
-    <span><b>Yükleniyor...</b></span>
-</div>
-
 
 <div id="tools-bar" [hidden]="!toolsBarVisible">
     <table id="light-table" style="width: 100%">
@@ -421,10 +417,10 @@
                     inFormRecordId="{{ inFormRecordId }}">
                 
                 </in-form-element>
-                <button class="btn btn-danger btn-block" 
-                    style="position: absolute; margin: -35 20 0 20; width: -webkit-fill-available;"
-                    (click)="closeModal(inFormElementId+'inFormModal')"
-                    type="button">İptal
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
                 </button>
             </div>
         </div>
