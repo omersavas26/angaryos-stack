@@ -1,7 +1,6 @@
 <div style="width: 100%; min-height: 100%;"  id="fullScreenMap"></div>
 
 
-
 <button (click)="zoomIn()" class="btn btn-sm btn-primary btn-icon" type="button" id="zoom-in-button">
     <span style="font-size: 12px;" class="ti ti-plus" ></span>
 </button>
@@ -12,7 +11,6 @@
 <div id="loading" *ngIf="loading">
     <span><b>Yükleniyor...</b></span>
 </div>
-
 
 
 <div id="tools-bar" [hidden]="!toolsBarVisible">
@@ -437,7 +435,13 @@
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-body">
-                <h3>Tıkladığınız noktadaki nesneler</h3>
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                
+                <h2>Arama Sonuçları <i *ngIf="searching" class="zmdi zmdi-settings zmdi-hc-spin"></i></h2>
                 
                 <table class="table table-bordered table-striped table-hover" role="grid" >
                     <thead>
@@ -462,7 +466,7 @@
                                 <a 
                                     class="btn btn-sm btn-primary"
                                     data-toggle="tooltip" title="Odaklan" 
-                                    (click)="zoomToFeature(featureList[tableName]['records'][recId]['feature'])">
+                                    (click)="zoomToFeature(featureList[tableName]['records'][recId]['_feature'])">
                                     
                                     <i class="zmdi zmdi-center-focus-weak"></i>
                                 </a>
@@ -471,19 +475,17 @@
                             <td>{{ recId }}</td>
                             <td style="font-size: 10px">
                                 <span
-                                *ngFor="let columnName of getKeys(featureList[tableName]['records'][recId]['data'])"
-                                [hidden]="columnName.substr(0, 1) == '_' || getSummary(featureList[tableName]['records'][recId]['data'][columnName]) == null">
+                                *ngFor="let columnName of getKeys(featureList[tableName]['records'][recId]['_summaries'])" >
                                     
                                     <span style="padding: 2px; margin: 2px 5px 2px 2px;"
                                         class="badge badge-primary">
 
                                         <b>
-                                            {{ getColumnDisplayName(tableName, columnName) }} :
+                                            {{ featureList[tableName]['records'][recId]["_summaries"][columnName]["displayName"] }} :
                                         </b>
                                         &nbsp;
-                                        {{ getSummary(featureList[tableName]['records'][recId]['data'][columnName]) }} 
+                                        {{ featureList[tableName]['records'][recId]["_summaries"][columnName]["data"] }} 
                                     </span>
-                                    
                                     
                                 </span>
                             </td>
@@ -496,13 +498,19 @@
 </div>
     
 <div 
-    *ngIf="lastSelectedFeatureType('external')" 
+    *ngIf="lastSelectedFeatureData && lastSelectedFeatureData['_type'] == 'external'" 
     class="modal fade" id="externalFeatureInfoModal" 
     role="dialog" aria-hidden="true">
     
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-body">
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                
                 <h3>Detay Bilgiler</h3>
                 
                 <table class="table table-bordered table-striped table-hover" role="grid" >
@@ -519,16 +527,22 @@
 </div>
     
 <div 
-    *ngIf="lastSelectedFeatureType('default')" 
+    *ngIf="lastSelectedFeatureData && lastSelectedFeatureData['_type'] == 'default'" 
     class="modal fade" id="defaultFeatureInfoModal" 
     role="dialog" aria-hidden="true">
     
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-body" style="padding: 0">
+                <button id="close" data-dismiss="modal"
+                    class="btn btn-primary btn-sm btn-icon" type="button">
+
+                    <i class="zmdi zmdi-close"></i>
+                </button>
+                
                 <in-show-element
-                    id="{{ lastSelectedFeatureData['data']['id'] }}"
-                    inShowTableName="{{ lastSelectedFeatureData['tableName'] }}" >
+                    id="{{ lastSelectedFeatureData['id'] }}"
+                    inShowTableName="{{ lastSelectedFeatureData['_tableName'] }}" >
                 </in-show-element>
             </div>
         </div>

@@ -69,10 +69,25 @@ MIT
 @angular/router
 MIT
 
+@ionic-native/camera
+MIT
+
 @ionic-native/core
 MIT
 
-@ionic-native/http
+@ionic-native/device
+MIT
+
+@ionic-native/file
+MIT
+
+@ionic-native/geolocation
+MIT
+
+@ionic-native/native-audio
+MIT
+
+@ionic-native/nfc
 MIT
 
 @ionic/angular

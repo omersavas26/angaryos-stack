@@ -28,6 +28,7 @@ $columns = Cache::rememberForever($cache_name, function() use($params)
 
         $columns[$column->name] =
         [
+            'id' => get_attr_from_cache('columns', 'name', $column->name, 'id'),
             'name' => $column->name,
             'type' => $column->type,
             'srid' => $srid,

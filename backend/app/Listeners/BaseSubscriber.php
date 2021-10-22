@@ -58,6 +58,7 @@ class BaseSubscriber
         
         
         $events->listen('record.quickSearch.requested', 'App\Listeners\TableSubscriber@quickSearch');
+        $events->listen('record.searchGeoInMultiTables.requested', 'App\Listeners\TableSubscriber@searchGeoInMultiTables');
         
         
         

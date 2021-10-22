@@ -56,6 +56,7 @@ export abstract class MapHelper
     if(this.customProjectionAdded) return;
 
     this.userProjection = 'EPSG:'+BaseHelper.loggedInUserInfo.user.srid;
+    if(this.userProjection == null) this.userProjection = "EPSG:7932";
 
     proj4.defs('EPSG:7932', '+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs');
     register(proj4);
@@ -1129,7 +1130,7 @@ export abstract class MapHelper
       if(zoom >= 19) return sizes[19];
       if(zoom <= 8) return sizes[8];
       
-      return sizes[Math.round(zoom)] * 8;
+      return sizes[Math.round(zoom)] * 1;
   }
 
   public static showNoMultipleConfirm(map, e = null)

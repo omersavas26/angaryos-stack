@@ -1,10 +1,6 @@
 <?php
 
-
-
 header("Access-Control-Allow-Origin: *");
-
-
 
 /****    Global Functions    ****/
 
@@ -57,7 +53,33 @@ function getMemcachedKeys($host = 'memcached', $port = 11211)
     return $keys;
 }
 
+function getMemcachedData($key, $prefix = 'angaryos_cache:', $host = 'memcached', $port = 11211)
+{
+    $mem = @fsockopen($host, $port);
+    if ($mem === FALSE) return -1;
 
+    $r = @fwrite($mem, 'get  ' . $prefix.$key . chr(10));
+    if ($r === FALSE) return -2;
+
+    $arr = [];
+    while (($l = @fgets($mem, 1024)) !== FALSE) 
+    {   $l = trim($l);
+        if ($l == 'END') break;
+        
+        array_push($arr, $l);
+    }
+        
+    @fclose($mem);
+    unset($mem);
+
+    if(count($arr) == 0) return FALSE;
+    else if($arr[1] == 'OK') return 'OK';
+    else bb(
+            'hiç filtre yok ise 1. eleman OK geliyor onu return ettim.'.
+            'filtre olunca yine birinci eleman muhtemelen filtre olarak gelecek onu da bi incele öyle return et. '.
+            ' istersen direk false dönerek laravel fw e geçirebilirsin reqyesti'
+            , $arr);
+}
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

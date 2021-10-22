@@ -67,6 +67,55 @@ trait TableSubscriberTrait
         ];
     }
     
+    private function getColumnIdsFromColumnArray($model, $id)
+    {
+        $rt = [];
+        if($id > 0)
+        {
+            $temp = get_attr_from_cache('column_arrays', 'id', $id, 'column_ids');
+            $rt = json_decode($temp);
+        }
+        else
+        {
+            $allColumns = $model->getAllColumnsFromDB();
+            foreach($allColumns as $column) array_push($rt, $column['id']);
+        }
+        
+        return $rt;
+    }    
+    
+    public function getDataForSearchGeoInMultiTables($params) 
+    {
+        $geoColumns = [];
+        
+        $return = [];
+        foreach($params->tables as $tableData)
+        {
+            $model = new BaseModel($tableData->name);
+            $allColumns = $model->getAllColumnsFromDB();
+            $columnIds = $this->getColumnIdsFromColumnArray($model, $tableData->column_array_id);
+            
+            $tableData->table_name = $tableData->name;
+            $tableData->limit = 50;
+            $tableData->page = 1;
+            
+            foreach($allColumns as $col)
+                if(in_array($col['id'], $columnIds) && strlen($col['srid']) > 0)
+                {
+                    $filter = helper('get_null_object');
+                    $filter->type = 1;
+                    $filter->guiType = 'multipolygon';
+                    $filter->filter = json_encode([$params->wkt]);
+                    $filter->description = '';
+                    $tableData->filters->{$col['name']} = $filter;
+                }
+                
+            $return[$tableData->name] = $this->listRequested($model, $tableData);
+        }
+        
+        return $return;
+    }
+    
     public function getDataForQuickSearch($model, $params, $words) 
     {
         $types = ['string', 'text', 'jsonb', 'integer', 'float', 'datetime', 'date', 'time'];

@@ -27,12 +27,10 @@ function getEnvironments()
 
 function getCqlFilterFromCache()
 {
-    global $env, $data;
+    global $data;
     
-    $m = new Memcached();
-    $m->addServer($env['MEMCACHED_HOST'], 11211);
-    
-    return $m->get('angaryos_cache:userToken:'.$data['segments'][3].'.tableName:'.$data['tableName'].'.mapFilters');
+    $key = 'userToken:'.$data['segments'][3].'.tableName:'.$data['tableName'].'.mapFilters';
+    return getMemcachedData($key);
 }
 
 function getUrlWithCqlFilter($filter)
@@ -49,7 +47,7 @@ function getUrlWithCqlFilter($filter)
             $data['requests']['CQL_FILTER'] = $filter;
     }
     
-    $url = 'http://geoserver:8080/geoserver/'.$env['GEOSERVER_WORKSPACE'].'/';
+    $url = 'http://geoserver:8080/geoserver/'.trim($env['GEOSERVER_WORKSPACE']).'/';
     $url .= strtolower($data['requests']['SERVICE']).'?';
 
     foreach($data['requests'] as $key => $value)       

@@ -2,12 +2,39 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use Gate;
 use DB;
 use Cache;
 use Storage;
 
 trait MapTrait
 {
+    private function fillAuthFunctions()
+    {
+        $rules = 
+        [
+            'viewAny', 
+            'view',           
+            'create',         
+            'update',
+            'delete',
+            'archive',
+            'restore',
+            'restored',
+            'deleted',
+            'export',
+            'cloneRecord',
+            'columnSetOrArrayIsPermitted',
+            
+            'columnIsPermittedForQuery',
+            'columnIsPermittedForList',
+            'treeIsPermittedForRelationTableData',
+        ];
+        
+        foreach($rules as $rule)
+            Gate::define($rule, 'App\Policies\UserPolicy@'.$rule);
+    }
+    
     private function GetTableNameAndCacheNameFromRequestWMS($requests)
     {
         if(isset($requests['LAYERS'])) $key = 'LAYERS';
@@ -48,7 +75,8 @@ trait MapTrait
         
         if(!isset($user->auths['filters'][$names['tableName']]['list'])) 
         {
-            Cache::remember('userToken:'.$token.'.tableName:'.$names['cacheName'].'.mapFilters', 60 * 60, function()
+            $key = 'userToken:'.$token.'.tableName:'.$names['cacheName'].'.mapFilters';
+            Cache::remember($key, 60 * 60, function()
             {
                 return 'OK';
             });
@@ -267,7 +295,7 @@ trait MapTrait
 
         $file->move($tempFolder, $fileName);
 
-        chmod($path, 0777);
+        @chmod($path, 0777);
 
         return $path;
     }
@@ -485,5 +513,25 @@ trait MapTrait
         }
      
         return $return;   
+    }
+    
+    private function getValidatedParamsForSearchGeoInMultiTables()
+    {
+        $params = read_from_response_data('params', TRUE);
+       
+        param_is_have($params, 'wkt');
+        param_is_have($params, 'tables');
+        
+        foreach($params->tables as $i => $tableData)
+        {
+            param_is_have($tableData, 'name');
+            param_is_have($tableData, 'column_array_id');
+            param_is_have($tableData, 'column_array_id_query');
+            
+            param_value_is_correct($tableData, 'column_array_id', ['required', 'numeric']);
+            param_value_is_correct($tableData, 'column_array_id_query', ['required', 'numeric']);
+        }
+        
+        return $params;
     }
 }

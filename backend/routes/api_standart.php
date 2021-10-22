@@ -43,7 +43,7 @@ Route::group(['prefix' => '{token}'], function ()
     
     
     
-    Route::post('getMapData', 'MapController@GetData');
+    Route::any('getMapData', 'MapController@GetData');
     Route::post('translateKmzOrKmlToJson', 'MapController@TranslateKmzOrKmlToJson');
     Route::post('getSubTables/{upTableName}/{type}', 'MapController@GetSubTables');
     
@@ -93,5 +93,5 @@ Route::group(['prefix' => '{token}'], function ()
     Route::post('columnGuiTriggers/{table_name}/{column_name}/{triggerName}', 'ColumnGuiTriggerController@index');
     
     Route::any('search/{table_name}/{words}', 'TableController@search');
-
+    Route::any('searchGeoInMultiTables', 'MapController@searchGeoInMultiTables');
 });

@@ -61,7 +61,8 @@ export class FullScreenMapElementComponent
     legendUrl = '';
     showLegendPanel = false;
     
-    loading = false;
+    //loading = false;
+    searching = false;
     
     typesMatch = 
     {
@@ -125,10 +126,10 @@ export class FullScreenMapElementComponent
 
     /****    Gui Operations    ****/
     
-    closeModal(id)
+    /*closeModal(id)
     {
         $(id).modal('hide');
-    }
+    }*/
     
     showSearchPanel()
     {
@@ -178,7 +179,7 @@ export class FullScreenMapElementComponent
         MapHelper.zoomToFeatures(this.map, [feature]);
     }
         
-    startLoading()
+    /*startLoading()
     {
         this.generalHelper.startLoading();
     }
@@ -186,10 +187,11 @@ export class FullScreenMapElementComponent
     stopLoading()
     {   
         this.generalHelper.stopLoading();
-    }
+    }*/
     
     getKeys(obj)
     {
+        if(obj == null) return [];
         return Object.keys(obj);
     }
     
@@ -397,7 +399,7 @@ export class FullScreenMapElementComponent
         var th = this;
         map.on('click', (event) =>
         {
-            if(th.loading) return;
+            //if(th.loading) return;
             
             if(th.drawingInteraction != null) 
                 return;
@@ -433,7 +435,7 @@ export class FullScreenMapElementComponent
         return buffer;
     }
     
-    getSearchedFeatureInfoFromCustomLayer(layer, search)
+    /*getSearchedFeatureInfoFromCustomLayer(layer, search)
     {
         return this.getSearchedFeatureInfoFromDefaultLayer(layer, search);
     }
@@ -505,16 +507,20 @@ export class FullScreenMapElementComponent
             default : 
                 return null;
         }
-    }
+    }*/
     
     async searchWithString(search)
     {
         try
         {
-            this.startLoading();
+            this.generalHelper.startLoading();
+            this.searching = true;
+            this.featureList = {};
             
-            var features = [];
-            var layers = MapHelper.getLayersFromMapWithoutBaseLayers(this.map);
+            this.showFeatureListTable();
+            
+            var layerTypes = ["default", "custom"];
+            var layers = MapHelper.getLayersFromMapWithoutBaseLayers(this.map);            
             for(var i = 0; i < layers.length; i++) 
             {
                 if(!layers[i].getVisible())
@@ -522,53 +528,122 @@ export class FullScreenMapElementComponent
                     if(layers[i]['layerAuth']) continue;
                     if(!layers[i]['search']) continue;
                 }
-
-                var temp = this.getSearchedFeatureInfoFromLayer(layers[i], search);
-                await temp.then((data: any[]) =>
+                
+                if(!layerTypes.includes(layers[i]['authData']['layerTableType']))
                 {
-                    if(data == null) return;
-
-                    for(var i = 0; i < data.length; i++)
-                    {
-                        var rec = data[i];
-                        if(typeof features[rec['tableName']] == "undefined")
-                            features[rec['tableName']] = 
-                            {
-                                name: rec['tableName'],
-                                display_name: rec['tableDisplayName'],
-                                records: []
-                            };
-
-                        features[rec['tableName']]['records'][rec['data']['id']] = rec;
-                    }
-                });
+                    console.log("external layer arama atlandı", layers[i]);
+                    continue;
+                }
+                
+                await this.searchOnTableWithString(layers[i], search);
+                await BaseHelper.sleep(500);                
             }
-
-            this.setFeatureList(features);
             
-            this.stopLoading();
+            this.searching = false;
+            this.generalHelper.stopLoading();
         }
         catch(ex)
         {
             this.messageHelper.toastMessage("Aradığınız nesneler getirilirken hata oluştu!");
-            this.stopLoading()
+            this.generalHelper.stopLoading();
+            this.searching = false;
         }
+    }
+    
+    async searchOnTableWithString(layer, words)
+    {
+        var info = BaseHelper.loggedInUserInfo;
+        if(info == null) return this.nullTableAuth();
+       
+        if(typeof info["auths"] == "undefined") return this.nullTableAuth();
+        if(typeof info["auths"]["tables"] == "undefined") return this.nullTableAuth();
+
+        var tables = info["auths"]["tables"];        
+        var tableName = layer.authData.tableName;
+        var table = tables[tableName];
+        
+        var url = this.sessionHelper.getBackendUrlWithToken();
+        if(url.length == 0) return;
+        
+        url += "search/"+tableName+"/"+encodeURI(words);
+        
+        var th = this;
+
+        var listId = table['lists'][0];
+        var queryId = listId;
+        
+        try
+        {
+            queryId = table['queries'][0];
+        }
+        catch(e) {}
+        
+        return this.sessionHelper.doHttpRequest("POST", url, 
+        {
+            'column_array_id': listId,
+            'column_array_id_query': queryId,
+            'page': 1
+        })
+        .then((data) => 
+        {
+            var tName = data["table_info"]['name'];
+            var tDisplayName = data["table_info"]['display_name'];
+            
+            if(typeof this.featureList[tName] == "undefined")
+                this.featureList[tName] = 
+                {
+                    name: tName,
+                    display_name: tDisplayName,
+                    records: []
+                };
+
+            for(var i = 0; i < data["records"].length; i++)
+            {
+                var rec = data["records"][i];
+                
+                rec["_tableName"] = tName;
+                rec["_summaries"] = {};
+                rec["_type"] = "default";
+                
+                var columnNames = this.getKeys(rec);
+                for(var j = 0; j < columnNames.length; j++)
+                {
+                    var columnName = columnNames[j];
+                    if(columnName.substr(0, 1) == '_') continue;
+                    
+                    rec["_summaries"][columnName] = {};
+                                        
+                    rec["_summaries"][columnName]["data"] = this.getSummary(rec[columnName]);
+                    rec["_summaries"][columnName]["displayName"] = data["columns"][columnName]["display_name"];  
+                    
+                    
+                    if(this.isWkt(rec[columnName]))
+                    {
+                        var geoFeature = MapHelper.getFeatureFromWkt(rec[columnName], "EPSG:"+data["columns"][columnName]["srid"])
+                        rec["_feature"] = geoFeature;  
+                    }     
+                }
+                
+                this.featureList[tName]['records'][rec['id']] = rec;
+            }
+        });
     }
     
     async showClickedFeatureInfo(event)
     {
         try
         {
-            this.startLoading();
+            this.generalHelper.startLoading();
+            this.searching = true;            
+            this.featureList = [];
+            this.showFeatureListTable();
             
             var buffer = this.getPolygonFromClickedPoint(event.coordinate);
-        
-            var features = [];
+                    
             var layers = MapHelper.getLayersFromMapWithoutBaseLayers(this.map);
             for(var i = 0; i < layers.length; i++)
             {                 
-                if(!layers[i]['search']) continue;
-    
+                if(!layers[i]['search']) continue;    
                 if(!layers[i].getVisible()) if(layers[i]['layerAuth']) continue;
 
                 if(layers[i].authData.layerTableType == "default")
@@ -598,46 +673,23 @@ export class FullScreenMapElementComponent
 
                     if(control) continue;
                 }    
-                
-                var temp = this.getClickedFeatureInfoFromLayer(layers[i], event, buffer);
-                await temp.then((data: any[]) =>
-                {
-                    if(data == null) return;
-
-                    for(var i = 0; i < data.length; i++)
-                    {
-                        var rec = data[i];
-                        if(typeof features[rec['tableName']] == "undefined")
-                            features[rec['tableName']] = 
-                            {
-                                name: rec['tableName'],
-                                display_name: rec['tableDisplayName'],
-                                records: []
-                            };
-
-                        features[rec['tableName']]['records'][rec['data']['id']] = rec;
-                    }
-                })
-                .catch((e) =>
-                {
-                    this.messageHelper.toastMessage("Tıklanılan noktadaki nesneler getirilirken hata oluştu!");
-                });
+                                                
+                this.getClickedFeatureInfoFromLayer(layers[i], event, buffer);
             }
             
-            this.setFeatureList(features);
-            
-            this.stopLoading();
+            this.searching = false;
+            this.generalHelper.stopLoading();
         }
         catch(ex)
         {
+            this.searching = false;
             this.messageHelper.toastMessage("Tıklanılan noktadaki nesneler getirilirken hata oluştu!");
-            this.stopLoading()
+            this.generalHelper.stopLoading()
         }
     }
-    
-    showFeatureListTable(features)
+        
+    showFeatureListTable()
     {
-        this.featureList = features;
         $('#featureListTableModal').modal('show');
     }
     
@@ -645,7 +697,7 @@ export class FullScreenMapElementComponent
     {
         this.lastSelectedFeatureData = feature;
         
-        switch(feature['type'])
+        switch(feature['_type'])
         {
             case 'external':
                 this.showFeatureInfoPageExternal(feature);
@@ -672,14 +724,14 @@ export class FullScreenMapElementComponent
         }, 100);
     }
     
-    lastSelectedFeatureType(typeName)
+    /*lastSelectedFeatureType(typeName)
     {
         if(typeof this.lastSelectedFeatureData['type'] == 'undefined') return false;
         
          return this.lastSelectedFeatureData['type'] == typeName;
-    }
+    }*/
     
-    setFeatureList(features)
+    /*setFeatureList(features)
     {
         var tableNames = Object.keys(features);
         
@@ -701,7 +753,7 @@ export class FullScreenMapElementComponent
             this.showFeatureListTable(features);
         else
             this.showFeatureInfoPage(recs[recIds[0]]);
-    }
+    }*/
     
     getClickedFeatureInfoFromLayer(layer, event, buffer)
     {
@@ -767,6 +819,15 @@ export class FullScreenMapElementComponent
     
     async getClickedFeatureInfoFromExternalLayer(layer, event, buffer)
     {
+        console.log("getClickedFeatureInfoFromExternalLayer");
+        return;
+        
+        //buradan promise dömek zorunda değil
+        //işimi hallet feature list doldur dışarısı seni await ile bekliyor...
+        
+            
+        
+        
         var srid = layer['authData']['srid'];
         if(srid == null || srid.length == 0) srid = MapHelper.dbProjection;
             
@@ -810,7 +871,9 @@ export class FullScreenMapElementComponent
                         })
                     }
                     
-                    resolve(temp);
+                    //burada this.featurelist içinde doldur
+                    //örneğine bakarak
+                    //resolve(temp);
                 }
             });
         });
@@ -828,7 +891,7 @@ export class FullScreenMapElementComponent
         return this.getClickedFeatureInfoFromDefaultLayer(layer, event, buffer);
     }
     
-    getListDataFromTable(tableName, filters = {}, limit = 0)
+    /*getListDataFromTable(tableName, filters = {}, limit = 0)
     {
         var auth = BaseHelper.loggedInUserInfo.auths.tables[tableName];
         if(typeof auth['lists'] == "undefined")
@@ -869,9 +932,9 @@ export class FullScreenMapElementComponent
             
             this.sessionHelper.disableDoHttpRequestErrorControl = false;
         }); 
-    }
+    }*/
     
-    async fillTableColumns(tableName)
+    /*async fillTableColumns(tableName)
     {
         if(typeof this.tableGeoColumns[tableName] != "undefined") return true;
         
@@ -905,69 +968,136 @@ export class FullScreenMapElementComponent
         });
 
         return temp;
+    }*/
+    
+    async getClickedFeatureInfoFromDefaultLayersWithInterval(layers, event, buffer)
+    {
+        BaseHelper.pipe["clickedFeatureInfoFromDefaultLayers"] = [];
+        
+        var info = BaseHelper.loggedInUserInfo;
+        if(info == null) return this.nullTableAuth();
+        if(typeof info["auths"] == "undefined") return this.nullTableAuth();
+        if(typeof info["auths"]["tables"] == "undefined") return this.nullTableAuth();
+        
+        var tableAuths = info["auths"]["tables"];
+        
+        var params = {};
+        params["tables"] = [];
+        for(var i = 0; i < layers.length; i++)
+        {
+            var layer = layers[i];
+            var tableName = layer['authData']['tableName'];
+        
+            var tableAuth = tableAuths[tableName];
+            var listId = tableAuth['lists'][0];
+            var queryId = listId;
+            try
+            {
+                queryId = tableAuth['queries'][0];
+            }
+            catch(e) {}
+            
+            var tableData = {
+                'name':  tableName,
+                'column_array_id': listId,
+                'column_array_id_query': queryId
+            };
+
+            params["tables"].push(tableData);
+        }
+        
+        params["wkt"] = MapHelper.getWktFromFeature(buffer);
+
+        var url = this.sessionHelper.getBackendUrlWithToken();
+        if(url.length == 0) return;        
+        url += "searchGeoInMultiTables";
+                
+        return this.sessionHelper.doHttpRequest("POST", url, { 'params': BaseHelper.objectToJsonStr(params) })
+        .then((multiData) => 
+        {
+            var tableNames = Object.keys(multiData);
+            for(var k = 0; k < tableNames.length; k++)
+            {
+                var data = multiData[tableNames[k]];
+                
+                var tName = data["table_info"]['name'];
+                var tDisplayName = data["table_info"]['display_name'];
+
+                if(typeof this.featureList[tName] == "undefined")
+                    this.featureList[tName] = 
+                    {
+                        name: tName,
+                        display_name: tDisplayName,
+                        records: []
+                    };
+
+                for(var i = 0; i < data["records"].length; i++)
+                {
+                    var rec = data["records"][i];
+
+                    rec["_tableName"] = tName;
+                    rec["_summaries"] = {};
+                    rec["_type"] = "default";
+
+                    var columnNames = this.getKeys(rec);
+                    for(var j = 0; j < columnNames.length; j++)
+                    {
+                        var columnName = columnNames[j];
+                        if(columnName.substr(0, 1) == '_') continue;
+
+                        rec["_summaries"][columnName] = {};
+
+                        rec["_summaries"][columnName]["data"] = this.getSummary(rec[columnName]);
+                        try 
+                        {
+                            rec["_summaries"][columnName]["displayName"] = data["columns"][columnName]["display_name"];  
+                        } 
+                        catch (error) 
+                        {
+                            rec["_summaries"][columnName]["displayName"] = columnName;
+                        }
+
+                        if(this.isWkt(rec[columnName]))
+                        {
+                            var geoFeature = MapHelper.getFeatureFromWkt(rec[columnName], "EPSG:"+data["columns"][columnName]["srid"])
+                            rec["_feature"] = geoFeature;    
+                        }     
+                    }
+
+                    this.featureList[tName]['records'][rec['id']] = rec;
+                }
+            }
+        });
     }
     
     async getClickedFeatureInfoFromDefaultLayer(layer, event, buffer)
     {
-        var tableName = layer['authData']['tableName'];
+        if(typeof BaseHelper.pipe["clickedFeatureInfoFromDefaultLayers"] == "undefined") BaseHelper.pipe["clickedFeatureInfoFromDefaultLayers"] = [];
         
-        var control = await this.fillTableColumns(tableName);
-        if(!control) return new Promise((resolve) => resolve(null));
-
-        var wkt = MapHelper.getWktFromFeature(buffer);
+        BaseHelper.pipe["clickedFeatureInfoFromDefaultLayers"].push(layer);
         
-        var temp = [];
+        var params = {
+            'this': this,
+            'layers': BaseHelper.pipe["clickedFeatureInfoFromDefaultLayers"],
+            'event': event,
+            'buffer': buffer
+        };
         
-        var columnNames = Object.keys(this.tableGeoColumns[tableName]);
-        for(var i = 0; i < columnNames.length; i++)
-        {
-            var column = this.tableGeoColumns[tableName][columnNames[i]];
-            
-            var filter = {};
-            filter[column['name']] =
-            {
-                "type": 1,
-                "guiType": "multipolygon",
-                "filter": '["'+wkt+'"]' 
-            };
-            
-            await this.getListDataFromTable(tableName, filter, 3)
-            .then(async (data) =>
-            {
-                if(data == null) return;
-                
-                for(var i = 0; i < data['records'].length; i++)
-                {
-                    var rec = data['records'][i];
-                    
-                    var geoFeature = MapHelper.getFeatureFromWkt(rec[column['name']], "EPSG:"+column['srid']);
-                
-                    temp.push(
-                    {
-                        'type': 'default',
-                        'tableName': tableName,
-                        'tableDisplayName': data['table_info']['display_name'],
-                        'feature': geoFeature,
-                        'data': rec,
-                        'response': rec
-                    });
-                }
-                
-                await BaseHelper.sleep(500);
-            });
-        }
-        
-        return new Promise((resolve) => resolve(temp));
+        BaseHelper.doInterval(
+            'getClickedFeatureInfoFromDefaultLayersWithInterval', 
+            (params) => params['this'].getClickedFeatureInfoFromDefaultLayersWithInterval(params.layers, params.event, params.buffer), 
+            params, 
+            250);
     }
     
-    getColumnDisplayName(tableName, columnName)
+    /*getColumnDisplayName(tableName, columnName)
     {
         if(typeof this.tableColumns[tableName] == "undefined") return columnName;
         if(typeof this.tableColumns[tableName][columnName] == "undefined") return columnName;
         if(typeof this.tableColumns[tableName][columnName]['display_name'] == "undefined") return columnName;
         
         return this.tableColumns[tableName][columnName]['display_name']
-    }
+    }*/
     
     getSummary(data)
     {
@@ -983,6 +1113,8 @@ export class FullScreenMapElementComponent
 
     isWkt(data)
     {
+        if(data == null) return false;
+        
         data = data.toString();
 
         if(data.substr(0, 7).toUpperCase() == 'POLYGON') return true;
@@ -2041,5 +2173,14 @@ export class FullScreenMapElementComponent
         if(nearFeature == null) return false;
 
         return nearFeature.featureObject.name;
+    }
+    
+    
+    
+    /****    Common Functions    ****/
+    
+    nullTableAuth()
+    {
+        this.messageHelper.sweetAlert("Arama yapmak için bir hiç bir tablo yetkiniz yok!", "Hata", "error");
     }
 }

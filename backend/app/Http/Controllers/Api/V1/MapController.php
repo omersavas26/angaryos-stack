@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\User;
+use Event;
+use Gate;
 
 class MapController extends Controller
 {
@@ -12,6 +15,11 @@ class MapController extends Controller
     {
         //\Cache::flush();
     }  
+    
+    private function abort($message = 'no.auth')
+    {
+        custom_abort($message);
+    }
     
     public function GetData($user)
     {
@@ -51,5 +59,29 @@ class MapController extends Controller
         send_log('info', 'Response Sub Tables ', json_encode($subTables));
 
         return helper('response_success', $subTables);
+    }
+    
+    public function searchGeoInMultiTables(User $user)
+    {
+        global $pipe;
+        
+        send_log('info', 'Request Search Geo In Multi Table');
+        
+        $this->fillAuthFunctions();
+        
+        $params = $this->getValidatedParamsForSearchGeoInMultiTables(); 
+        foreach($params->tables as $tableData)
+        {
+            $pipe['table'] = $tableData->name;
+            $tableData->sorts = helper('get_null_object');
+            $tableData->filters = $tableData->sorts;
+            if(Gate::denies('viewAny', $tableData)) $this->abort('no.auth.for.'.$tableData->name);
+        }
+                
+        $data = Event::dispatch('record.searchGeoInMultiTables.requested', [$params])[0];
+        
+        send_log('info', 'Response Search Geo In Multi Table', [$params, $data]);
+        
+        return helper('response_success', $data);
     }
 }
