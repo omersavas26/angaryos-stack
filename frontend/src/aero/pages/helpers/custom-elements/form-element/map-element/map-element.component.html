@@ -4,14 +4,14 @@ name="{{ name }}" id="{{ name }}"
 value="{{ value }}">
 
 <div [class]="showFilterTypesSelect ? 'filter-element-big' : 'filter-element'">
-    <span (click)="clearValue()" style="right: 10; position: absolute;">x</span>
+    <span (click)="clearValue($event)" style="right: 10; position: absolute;">x</span>
     
     <a (click)="openMapElement()" [ngStyle]="getStyle()">
         {{ getDescription() }}
     </a>
 </div>
 
-<div class="modal fade" id="{{ name }}ElementModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="{{ name }}MapElementModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-body" style="padding: 5px !important;">

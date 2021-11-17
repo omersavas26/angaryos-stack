@@ -365,6 +365,11 @@ export class MultiSelectElementComponent
         this.changed.emit(event);
     }
 
+    filterTypeChanged(event)
+    {
+        this.changed.emit(event);
+    }
+    
     clearAndCacheDisplayNameOptions()
     {
         var localKey = "user:"+BaseHelper.loggedInUserInfo.user.id+"."+this.baseUrl+"/form";

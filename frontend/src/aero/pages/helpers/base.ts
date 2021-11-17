@@ -446,9 +446,15 @@ export abstract class BaseHelper
   }
 }
 
-var _error = console.error;
-console.error = function() 
+setTimeout(() =>
 {
-  console.log("error araya girdi");
-  return _error.apply(console, arguments);
-};
+    if(!BaseHelper.isBrowser)
+    {
+        var _error = console.error;
+        console.error = function() 
+        {
+          console.log("error araya girdi");
+          return _error.apply(console, arguments);
+        };
+    }
+}, 500);

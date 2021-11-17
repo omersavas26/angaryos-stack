@@ -273,8 +273,10 @@ class User extends Authenticatable
         $info['style'] = helper('seo', $info['style']);
         
         if($info['type'] == 'wfs' && strlen($info['style']) > 0) 
+        {
             $info['style'] = get_attr_from_cache('layer_styles', 'id', $layer->layer_style_id, 'style_code');
-               
+            $info['style'] = helper('reverse_clear_string_for_db', $info['style']);
+        }      
         
         $info['period'] = $layer->period;
         if(strlen($info['period']) == 0) $info['period'] = 0;
@@ -313,13 +315,16 @@ class User extends Authenticatable
         $info['style'] = helper('seo', $info['style']);
         
         if($info['type'] == 'wfs' && strlen($info['style']) > 0) 
+        {
             $info['style'] = get_attr_from_cache('layer_styles', 'id', $layer->layer_style_id, 'style_code');
+            $info['style'] = helper('reverse_clear_string_for_db', $info['style']);
+        }
         
         $info['period'] = $layer->period;
         if(strlen($info['period']) == 0) $info['period'] = 0;
         
         $info['filter'] = FALSE;
-        $info['search'] = FALSE;
+        $info['search'] = TRUE;
         $info['layerAuth'] = TRUE;
 
         $info['legend_url'] = $layer->legend_url;
@@ -358,7 +363,7 @@ class User extends Authenticatable
                 $temp = $this->getExternalLayerInfo($layer);
                 $name = str_replace(':', '__', $layer->layer_name);
 
-                $mapAuths[$name] = $temp;
+                $mapAuths[$name.'__temp__ext_'.$id] = $temp;
             }
             
         if(isset($this->auths['custom_layers']))

@@ -23,6 +23,6 @@ $cqlFilter = getCqlFilterFromCache();
 if(!$cqlFilter) return;
 
 $url = getUrlWithCqlFilter($cqlFilter);
-return proxyToImage($url); 
+return proxyToUrl($url); 
 
 ?>

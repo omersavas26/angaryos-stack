@@ -52,6 +52,7 @@ export class DateElementComponent
     filterTypeChanged(e)
     {
         this.filterType = e.target.value;
+        this.changed.emit(event)
     }
 
     addInputMask()

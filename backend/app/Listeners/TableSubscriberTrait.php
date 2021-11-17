@@ -86,31 +86,40 @@ trait TableSubscriberTrait
     
     public function getDataForSearchGeoInMultiTables($params) 
     {
+        $auths = \Auth::user()->auths;
         $geoColumns = [];
         
         $return = [];
         foreach($params->tables as $tableData)
         {
+            $mapAuths = @$auths['tables'][$tableData->name]['maps'];
+            if(!$mapAuths) continue;
+            if(!in_array(0, $mapAuths) && !in_array(2, $mapAuths)) continue;
+            
             $model = new BaseModel($tableData->name);
             $allColumns = $model->getAllColumnsFromDB();
-            $columnIds = $this->getColumnIdsFromColumnArray($model, $tableData->column_array_id);
             
             $tableData->table_name = $tableData->name;
             $tableData->limit = 50;
             $tableData->page = 1;
             
+            $control = FALSE;
             foreach($allColumns as $col)
-                if(in_array($col['id'], $columnIds) && strlen($col['srid']) > 0)
+                if(strlen($col['srid']) > 0)
                 {
                     $filter = helper('get_null_object');
                     $filter->type = 1;
                     $filter->guiType = 'multipolygon';
                     $filter->filter = json_encode([$params->wkt]);
                     $filter->description = '';
+                    
                     $tableData->filters->{$col['name']} = $filter;
+                    
+                    $control = TRUE;
+                    break;//birden fazla geo kolon varsa "and" olarak eklenir
                 }
-                
-            $return[$tableData->name] = $this->listRequested($model, $tableData);
+            
+            if($control) $return[$tableData->name] = $this->listRequested($model, $tableData);
         }
         
         return $return;

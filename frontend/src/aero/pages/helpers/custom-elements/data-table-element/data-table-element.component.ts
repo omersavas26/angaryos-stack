@@ -865,6 +865,8 @@ export class DataTableElementComponent implements OnDestroy
     
     detailFilterChanged(filter)
     {
+        delete filter["event"];
+        
         if(filter.filter != null && filter.filter.length == 0)
         {
             delete this.params.filters[filter.columnName];

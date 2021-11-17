@@ -52,6 +52,7 @@ export class TimeElementComponent
     filterTypeChanged(e)
     {
         this.filterType = e.target.value;
+        this.changed.emit(event);
     }
 
     addInputMask()

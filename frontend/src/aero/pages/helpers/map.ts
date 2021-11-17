@@ -436,7 +436,7 @@ export abstract class MapHelper
 
     this.addEventListenersOnVectorSource(map, vectorSource, tableAuth);
     
-    layer['name'] = tableAuth["workspace"]+'__'+tableAuth["layer_name"];
+    layer['name'] = tableAuth["orj_name"];
 
     var keys = Object.keys(tableAuth);
     for(var i = 0; i < keys.length; i++) layer[keys[i]] = tableAuth[keys[i]];
@@ -473,7 +473,7 @@ export abstract class MapHelper
       })
     });
 
-    layer['name'] = tableAuth["workspace"]+'__'+tableAuth["layer_name"];
+    layer['name'] = tableAuth["orj_name"];
     
     var keys = Object.keys(tableAuth);
     for(var i = 0; i < keys.length; i++) layer[keys[i]] = tableAuth[keys[i]];
@@ -504,7 +504,7 @@ export abstract class MapHelper
       })
     });
 
-    layer['name'] = tableAuth["workspace"]+'__'+tableAuth["layer_name"];
+    layer['name'] = tableAuth["orj_name"];
     
     var keys = Object.keys(tableAuth);
     for(var i = 0; i < keys.length; i++) layer[keys[i]] = tableAuth[keys[i]];
@@ -564,6 +564,7 @@ export abstract class MapHelper
       {
         var tableName = tableNames[i];
         var auth = layerAuths[tableName];
+        auth["orj_name"] = tableName;
 
         var layer = this.getLayerFromMapAuth(map, auth);
         if(layer == null) continue;
@@ -1130,7 +1131,7 @@ export abstract class MapHelper
       if(zoom >= 19) return sizes[19];
       if(zoom <= 8) return sizes[8];
       
-      return sizes[Math.round(zoom)] * 1;
+      return sizes[Math.round(zoom)] * 1.5;
   }
 
   public static showNoMultipleConfirm(map, e = null)

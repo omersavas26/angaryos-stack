@@ -45,6 +45,11 @@ export class PhoneElementComponent
         
         this.val = this.value;
     }
+    
+    filterTypeChanged(event)
+    {
+        this.changed.emit(event);
+    }
 
     addInputMask()
     {

@@ -253,9 +253,7 @@ trait MapTrait
                 
         foreach($requests as $key => $value) 
         {
-            if($key != 'CQL_FILTER')
-                $value = urlencode($value);
-            
+            $value = urlencode($value);
             $url .= $key.'='.$value.'&';
         }
         

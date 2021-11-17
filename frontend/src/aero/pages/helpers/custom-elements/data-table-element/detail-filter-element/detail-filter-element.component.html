@@ -1,11 +1,14 @@
-<div class="modal-body">
-    <table class="light-table">
+<div style="padding: 10px" *ngIf="show">
+    <table class="light-table" style="margin-bottom: 15px">
         <tr>
             <td>
-                <select id="data_fullness_state" name="data_fullness_state"
-                    value = "{{ getData('type') < 100 ? '' : getData('type').toString() }}"
+                <select 
+                    [id]="filterObject['columnName']+'data_fullness_state'" 
+                    [name]="filterObject['columnName']+'data_fullness_state'"
+                    value = "{{ filterObject['type'] < 100 ? '' : filterObject['type'].toString() }}"
                     style="margin-bottom: 10px;"
-                    class="show-tick ms form-control"
+                    class="show-tick ms form-control data_fullness_state"
+                    (change)="formElementChangeEvent($event)"
                     #dataFullnessState>
                     
                     <option value="">
@@ -22,21 +25,22 @@
         </tr><tr *ngIf="dataFullnessState.value == ''" style="min-height: 80; height:auto">
             <form-element 
                 style="display: contents;"
-                name="{{ getData('columnName') }}_filter_detail"
-                columnName="{{ getData('columnName') }}"
+                name="{{ filterObject['columnName'] }}_filter_detail"
+                columnName="{{ filterObject['columnName'] }}"
                 class="form-control"
                 baseUrl="{{ baseUrl }}"
-                type="{{ getColumnGuiTypeForQuery(getData('guiType')) }}"
+                type="{{ filterObject['guiTypeForQuery'] }}"
                 placeholder="{{ displayName }}"
                 showFilterTypesSelect="true"
-                filterType="{{ getData('type') }}"
-                value="{{ getData('filter') }}"
-                value2="{{ getData('filter2') }}">
+                filterType="{{ filterObject['type'] }}"
+                value="{{ filterObject['filter'] }}"
+                (changed)="formElementChangeEvent($event)"
+                value2="{{ filterObject['filter2'] }}">
             </form-element>              
         </tr>
     </table>
-</div>
-<div class="modal-footer">
-    <button (click)="detailFilter()" type="button" class="btn btn-primary">Filtrele</button>
-    <button type="button" class="btn btn-danger" data-dismiss="modal">İptal</button>                
+
+    <button *ngIf="showButtons" (click)="detailFilter(null, $event)" type="button" class="btn btn-primary">Filtrele</button>
+    <button *ngIf="showButtons" type="button" class="btn btn-danger" data-dismiss="modal">İptal</button>                
+
 </div>

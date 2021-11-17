@@ -169,7 +169,7 @@ export class MapElementComponent
     {
         return new Promise((resolve) =>
         {
-            $(this.baseElementSelector+' #'+this.name+'ElementModal').modal('show').on('shown.bs.modal', () => 
+            $(this.baseElementSelector+' #'+this.name+'MapElementModal').modal('show').on('shown.bs.modal', () => 
             {
                 resolve(true);                
             });
@@ -223,7 +223,8 @@ export class MapElementComponent
 
         var wkts = BaseHelper.jsonStrToObject(this.value);
         for(var i = 0; i < wkts.length; i++)
-            MapHelper.addFeatureByWktAsSingleIfMulti(map, wkts[i], srid);
+            if(wkts[i] != '[]')
+                MapHelper.addFeatureByWktAsSingleIfMulti(map, wkts[i], srid);
 
         return map;
     }
@@ -280,9 +281,10 @@ export class MapElementComponent
         $('#kmzFile').click();
     }
     
-    clearValue()
+    clearValue($event)
     {
         this.value = "";
+        setTimeout(() => this.handleChange(event), 200);
     }
 
 
@@ -359,7 +361,7 @@ export class MapElementComponent
         changeEvent.initEvent('change', true, true);
         $(this.baseElementSelector+' #'+this.name)[0].dispatchEvent(changeEvent);
         
-        $(this.baseElementSelector+' #'+this.name+'ElementModal').modal('hide');
+        $(this.baseElementSelector+' #'+this.name+'MapElementModal').modal('hide');
         
         
     }

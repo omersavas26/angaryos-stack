@@ -529,6 +529,7 @@ export abstract class DataHelper
 
     public static changeDataForFilterByGuiTypeBoolean(data)
     {
+        if(data == null || data == "") return "";
         return data == "true";
     }
 

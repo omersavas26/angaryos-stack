@@ -3,13 +3,6 @@ value="{{ val }}"
 name="{{ name }}" id="{{ name }}"
 style="display: none;">
     
-
-    
-    
-    
-    
-    
-    
 <div class="input-group masked-input">
     <div class="input-group-prepend">
         <span class="input-group-text" 
@@ -26,11 +19,10 @@ style="display: none;">
     name="{{ name }}-display" id="{{ name }}-display">
 </div>
     
-    
-
 <select *ngIf="showFilterTypesSelect"
     id="{{ name }}_filter_type" name="{{ name }}_filter_type" style="margin-top: 10px;"
     value="{{ filterType }}"
+    (change)="dataChanged($event)"
     class="show-tick ms form-control">
     
     <option value="1">

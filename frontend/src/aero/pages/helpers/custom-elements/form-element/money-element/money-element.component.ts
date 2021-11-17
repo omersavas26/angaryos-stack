@@ -49,7 +49,6 @@ export class MoneyElementComponent
             () => this.addInputMask());        
     }
 
-    
     dataChanged(event)
     {
         var upId = this.upFormId;

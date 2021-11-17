@@ -17,20 +17,57 @@ export class DetailFilterElementComponent
     @Input() filterJson: string;
     @Input() baseUrl: string;
     @Input() displayName: string;
+    @Input() showButtons: boolean = true;
 
     @Output() changed = new EventEmitter();
+    @Output() formElementChanged = new EventEmitter();
 
-    constructor(private messageHelper: MessageHelper){}
+    filterObject = null;
+    show = false;
+    
+    constructor(private messageHelper: MessageHelper) {}
+    
+    ngAfterViewInit() 
+    {
+        this.updateData();
+    }
+    
+    ngOnChanges()
+    {
+        this.updateData();
+    }
+    
+    updateData()
+    {
+        try
+        {
+            this.filterObject = BaseHelper.jsonStrToObject(this.filterJson);
+            this.filterObject['guiTypeForQuery'] = this.getColumnGuiTypeForQuery(this.filterObject['guiType']);
+            setTimeout(() => this.show = true, 200); 
+        }
+        catch(err)
+        {
+            console.log(err);
+        }
+    }
 
     getLocalKey(attr)
     {
         return "user:"+BaseHelper.loggedInUserInfo.user.id+"."+this.baseUrl+"."+attr;
     }
 
-    detailFilter()
+    detailFilter(emitter = null, event = null)
     {     
-        var filter = BaseHelper.jsonStrToObject(this.filterJson);
-        var fullnes = $('#data_fullness_state').val();
+        var closeModal = false;
+        
+        if(emitter == null)
+        {
+            emitter = this.changed;
+            closeModal = true;
+        }
+        
+        var filter = this.filterObject;
+        var fullnes = $('#'+this.filterObject['columnName']+'data_fullness_state').val();
         if(fullnes.length > 0)
         {
             filter.type = parseInt(fullnes);
@@ -64,10 +101,17 @@ export class DetailFilterElementComponent
                                                                     this.getLocalKey("data"));
         } 
 
-        this.changed.emit(filter);
+        if(event != null) filter.event = event;
         
-        $('#detailFilterModal').modal('hide');
+        emitter.emit(filter);
+        
+        if(closeModal) $('#detailFilterModal').modal('hide');
     } 
+    
+    formElementChangeEvent(event)
+    {
+        this.detailFilter(this.formElementChanged, event);
+    }
 
     getColumnGuiTypeForQuery(guiType)
     {
@@ -79,14 +123,4 @@ export class DetailFilterElementComponent
             default: return guiType;
         }
     }  
-
-    getData(path)
-    {
-        if(typeof this.filterJson == "undefined") return null;
-        if(this.filterJson == "null") return null;
-        if(this.filterJson.length == 0) return null;
-
-        var data = BaseHelper.jsonStrToObject(this.filterJson);
-        return DataHelper.getData(data, path);
-    }
 }

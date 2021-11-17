@@ -382,12 +382,12 @@ services:
         deploy:
             mode: replicated
             replicas: 1
-            labels:
-                traefik.frontend.rule: "PathPrefix:/geoserver"
-                traefik.port: "8080"
-                traefik.enable: "true"
-                traefik.backend: "geoserver"
-                traefik.docker.network: "angaryos_backend-nw"
+            #labels:
+                #traefik.frontend.rule: "PathPrefix:/geoserver"
+                #traefik.port: "8080"
+                #traefik.enable: "true"
+                #traefik.backend: "geoserver"
+                #traefik.docker.network: "angaryos_backend-nw"
         environment:
             - GEOSERVER_LOG_LOCATION=/opt/geoserver/data_dir/logs/geoserver.log
         volumes:

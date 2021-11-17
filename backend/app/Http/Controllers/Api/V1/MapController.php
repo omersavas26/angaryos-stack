@@ -74,7 +74,7 @@ class MapController extends Controller
         {
             $pipe['table'] = $tableData->name;
             $tableData->sorts = helper('get_null_object');
-            $tableData->filters = $tableData->sorts;
+            $tableData->filters = helper('get_null_object');
             if(Gate::denies('viewAny', $tableData)) $this->abort('no.auth.for.'.$tableData->name);
         }
                 
