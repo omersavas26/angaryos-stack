@@ -303,7 +303,7 @@ trait MapTrait
         $temp = explode('/', $path);
         $fileName = $temp[count($temp) - 1];
         $temp[count($temp) - 1] = str_replace('.kmz', '', $fileName);
-        $exportPath = implode('/', $temp);
+        $exportPath = implode('/', $temp).'_'.rand(100,10000);
 
         $zip = new \ZipArchive;
         if ($zip->open($path) === TRUE) 
@@ -314,7 +314,14 @@ trait MapTrait
         else
             custom_abort('can.not.open.kmz.file');
 
-        return $exportPath . '/doc.kml';
+        $r = scandir($exportPath);
+        if(count($r) != 3) 
+        {
+            \Log::alert("kmz içinden geçersiz sayıda dosya çıktı!".json_encode($r));
+            custom_abort('kmz.file.error');
+        }
+        
+        return $exportPath.'/'.$r[2];
     }
 
     private function GetDataArrayFromKmlOrKmzFile($path)
