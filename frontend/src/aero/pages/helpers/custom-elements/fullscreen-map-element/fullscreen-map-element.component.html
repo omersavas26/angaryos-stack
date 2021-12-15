@@ -609,11 +609,12 @@
                         
                         {{ tableColumns[currentLayerForFilter['authData']['orj_name']][columnName]['display_name'] }}
 
+                        <!-- (changed)="detailFilterChanged($event)" -->
                         <detail-filter-element 
                            [showButtons] = "false"
                            [displayName]="tableColumns[currentLayerForFilter['authData']['orj_name']][columnName]['display_name']"                                                                
                            [filterJson]="tableColumns[currentLayerForFilter['authData']['orj_name']][columnName]['filterJson']"
-                           (changed)="detailFilterChanged($event)"
+                           
                            (formElementChanged)="detailFilterFormElementChanged($event)"
                            [baseUrl]="tableColumns[currentLayerForFilter['authData']['orj_name']][columnName]['baseUrl']" >
                        </detail-filter-element>
