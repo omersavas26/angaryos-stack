@@ -229,17 +229,17 @@ export class MultiSelectElementComponent
 
                             $(elementId+" select").select2('close');
                         });
+                        
+                        setTimeout(() => element.select2('enable', [true]), 500);
                     }
                     catch(err2)
                     {
                         console.log(this.name+' select2 (multi) yüklenmemiş tekrar denenecek!')
                         await BaseHelper.sleep(100);
                         this.elementOperations();
+                        return;
                     }
                 }
-
-                await BaseHelper.sleep(500);
-                this.aeroThemeHelper.pageRutine();
             },
             error : (e) =>
             {
@@ -256,7 +256,6 @@ export class MultiSelectElementComponent
         url += "/"+this.baseUrl + "/getSelectColumnData/" + this.columnName;
         
         var th = this;
-        
         
         try 
         { 
@@ -311,8 +310,7 @@ export class MultiSelectElementComponent
             .on('select2:select', (event) => th.selected(event))
             .on('select2:unselect', (event) => th.unselected(event));
             
-            await BaseHelper.sleep(500);
-            this.aeroThemeHelper.pageRutine();
+            setTimeout(() => $(this.baseElementSelector+' [name="'+this.name+'"]').select2('enable', [true]), 500);
         }
         catch(err2)
         {

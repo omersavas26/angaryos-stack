@@ -45,6 +45,8 @@ class DashboardLibrary
     public function ComboBoxList($param1, $param2)
     {
         if($param1 == 'Test' && $param2 == '0') return $this->ComboBoxListTestData();
+        return $this->{'getComboBoxList'.$param1.$param2.'Data'}();
+        
     }
     
     public function DataEntegratorStatus($param1, $param2)
@@ -81,10 +83,12 @@ class DashboardLibrary
     public function GraphicXY($param1, $param2)
     {
         if($param1 == 'Test' && $param2 == '0') return $this->GraphicXYTestData();
+        return $this->{'getGraphicXY'.$param1.$param2.'Data'}();
     }
       
     public function GraphicPie($param1, $param2)
     {
         if($param1 == 'Test' && $param2 == '0') return $this->GraphicPieTestData();
+        return $this->{'getGraphicPie'.$param1.$param2.'Data'}();
     }    
 }

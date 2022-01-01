@@ -56,7 +56,7 @@ Route::group(['prefix' => '{token}'], function ()
     
     Route::any('missions/{mission}', 'MissionController@DoMission');
     
-    Route::post('dashboards/getData/{auth}', 'DashboardController@GetData');
+    Route::any('dashboards/getData/{auth}', 'DashboardController@GetData');
     
     Route::any('tables/{table_name}', 'TableController@index');
     Route::post('tables/{table_name}/deleted', 'TableController@deleted');

@@ -34,14 +34,6 @@ export class AeroThemeHelper
             $('.tooltip-inner').remove();
             $('[data-toggle="tooltip"]').tooltip();
             
-            $.ajax({
-                type: "GET",
-                url: 'assets/themes/aero/assets/bundles/libscripts.bundle.js',
-                success: {},
-                dataType: "script",
-                cache: true
-            }); 
-            
             if($('section.content').length > 0 && (BaseHelper.isAndroid || BaseHelper.isIos))
             {
               var h = $('.body_scroll .card').height();

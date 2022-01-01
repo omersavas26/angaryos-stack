@@ -581,6 +581,8 @@ export abstract class DataHelper
     {
         var url = al['url'];
         
+        if(url == null || url.length == 0) return "";
+        
         url = BaseHelper.replaceAll(url, '***baseUrl***', BaseHelper.backendBaseUrl);
         url = BaseHelper.replaceAll(url, '***token***', BaseHelper.token);
         
