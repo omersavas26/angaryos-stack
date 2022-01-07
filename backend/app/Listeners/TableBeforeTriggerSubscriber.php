@@ -117,7 +117,11 @@ class TableBeforeTriggerSubscriber
     
     public function restoreRequested($archiveRecord)
     {
-        $tableName = substr($archiveRecord->getTable(), 0, -8);
+        $tableName = $archiveRecord->getTable();
+        
+        if(strstr($tableName, '_archive'))
+            $tableName = str_replace('_archive', '', $tableName);
+        
         $table = get_attr_from_cache('tables', 'name', $tableName, '*');
         
         $columns = [];

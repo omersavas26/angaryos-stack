@@ -60,7 +60,10 @@ Route::bind('archive_id', function ($id)
     
     global $pipe;
     
-    $model = new BaseModel($pipe['table']);
+    $tableName = $pipe['table'];
+    if(!strstr($tableName, '_archive')) $tableName .= '_archive';
+
+    $model = new BaseModel($tableName);
     $model = $model->find($id);
     
     if($model == NULL) abort(helper('response_error', 'fail.archive_id'));

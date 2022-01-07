@@ -113,7 +113,11 @@ class TableAfterTriggerSubscriber
     
     public function restoreSuccess($archiveRecord, $record)
     {
-        $tableName = $record->getTable();
+        $tableName = $archiveRecord->getTable();
+        
+        if(strstr($tableName, '_archive'))
+            $tableName = str_replace('_archive', '', $tableName);
+        
         $table = get_attr_from_cache('tables', 'name', $tableName, '*');
         
         $columns = [];
